@@ -4,7 +4,7 @@ import { Event } from '../types';
 import { 
   Users, Globe, CheckCircle, Building2, Calendar, 
   ArrowRight, Award, Newspaper, Star, Sparkles,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Briefcase
 } from 'lucide-react';
 
 interface HomeProps {
@@ -362,44 +362,73 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
       {/* Bounded Homepage content wrapper */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
-        {/* Feature Boxes */}
-        <section className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-0 shadow-2xl rounded-3xl overflow-hidden border border-slate-200/10 bg-slate-50 dark:bg-slate-950">
-        <div className="bg-primary text-slate-900 p-8 flex flex-col justify-between min-h-[240px]">
-          <div>
-            <h3 className="font-extrabold text-xl tracking-tight mb-3">Browse Careers</h3>
-            <p className="text-sm font-medium opacity-90 leading-relaxed">
-              Explore job openings and internship opportunities posted by our global alumni network.
-            </p>
+        <section className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Card 1: Careers */}
+          <div 
+            onClick={() => setCurrentTab('jobs')}
+            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-300" />
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-primary transition-colors duration-250">
+                Browse Careers
+              </h3>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
+                Explore job openings and internship opportunities posted by our global alumni network.
+              </p>
+            </div>
+            <span className="text-left font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
+              Explore Careers <ArrowRight className="w-4 h-4" />
+            </span>
           </div>
-          <button onClick={() => setCurrentTab('jobs')} className="text-left font-bold text-xs uppercase tracking-wider hover:underline flex items-center gap-2 mt-4">
-            Explore Careers <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
 
-        <div className="bg-secondary text-white p-8 flex flex-col justify-between min-h-[240px]">
-          <div>
-            <h3 className="font-extrabold text-xl tracking-tight mb-3">Alumni Directory</h3>
-            <p className="text-sm font-light opacity-80 leading-relaxed">
-              Search classmate registries, verify graduation indices, and establish professional links.
-            </p>
+          {/* Card 2: Directory */}
+          <div 
+            onClick={() => setCurrentTab('directory')}
+            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-sky-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-sky-550/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all duration-300" />
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-sky-500 transition-colors duration-250">
+                Alumni Directory
+              </h3>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
+                Search classmate registries, verify graduation indices, and establish professional links.
+              </p>
+            </div>
+            <span className="text-left font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
+              Search Classmates <ArrowRight className="w-4 h-4" />
+            </span>
           </div>
-          <button onClick={() => setCurrentTab('directory')} className="text-left font-bold text-xs uppercase tracking-wider text-primary hover:underline flex items-center gap-2 mt-4">
-            Search Classmates <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
 
-        <div className="bg-primary text-slate-900 p-8 flex flex-col justify-between min-h-[240px] border-t md:border-t-0 md:border-l border-slate-900/10">
-          <div>
-            <h3 className="font-extrabold text-xl tracking-tight mb-3">Expert Mentorship</h3>
-            <p className="text-sm font-medium opacity-90 leading-relaxed">
-              Register as an alumni mentor or request 1-on-1 career guidance sessions with students.
-            </p>
+          {/* Card 3: Mentorship */}
+          <div 
+            onClick={() => { if (currentUser) setCurrentTab(`${currentUser.role}-dashboard`); else setCurrentTab('login-selection'); }}
+            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-violet-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-550/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
+          >
+            <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all duration-300" />
+            <div>
+              <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
+                <Award className="w-5 h-5" />
+              </div>
+              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-violet-500 transition-colors duration-250">
+                Expert Mentorship
+              </h3>
+              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
+                Register as an alumni mentor or request 1-on-1 career guidance sessions with students.
+              </p>
+            </div>
+            <span className="text-left font-bold text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400 flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
+              Match Mentors <ArrowRight className="w-4 h-4" />
+            </span>
           </div>
-          <button onClick={() => { if (currentUser) setCurrentTab(`${currentUser.role}-dashboard`); else setCurrentTab('login-selection'); }} className="text-left font-bold text-xs uppercase tracking-wider hover:underline flex items-center gap-2 mt-4">
-            Match Mentors <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-      </section>
+        </section>
 
       {/* Statistics Ticker */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-10">
