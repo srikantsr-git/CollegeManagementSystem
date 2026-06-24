@@ -979,43 +979,43 @@ const HodsPanel: React.FC<HodsPanelProps> = ({ onSelectMember }) => {
                 <HodsMemberPhoto src={h.photo_url} alt={h.name} />
               </div>
               <div className="flex-1 min-w-0">
-                <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest">#{idx + 1}</span>
-                <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-tight mt-1">{h.name}</h3>
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">#{idx + 1}</span>
+                <h3 className="font-extrabold text-base text-slate-800 dark:text-white leading-tight mt-1">{h.name}</h3>
                 {h.designation && (
-                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-[9px] font-bold bg-sky-500/10 text-sky-600 border border-sky-500/20 uppercase tracking-wide">{h.designation}</span>
+                  <span className="inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-500/10 text-sky-600 border border-sky-500/20 uppercase tracking-wide">{h.designation}</span>
                 )}
                 {h.profile_pdf_url && (
-                  <div className="mt-2">
-                    <a href={h.profile_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 dark:text-sky-400 hover:underline">
-                      <FileText className="w-3 h-3" /> View Profile
+                  <div className="mt-2.5">
+                    <a href={h.profile_pdf_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline">
+                      <FileText className="w-3.5 h-3.5" /> View Profile
                     </a>
                   </div>
                 )}
               </div>
             </div>
             {h.message && (
-              <div className="mt-4 p-3 rounded-xl bg-sky-50/60 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-900/30">
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic">"{h.message}"</p>
+              <div className="mt-4 p-4 rounded-xl bg-sky-50/60 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-900/30">
+                <p className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed italic">"{h.message}"</p>
               </div>
             )}
             {(h.college_name || h.college_address) && (
-              <div className="mt-4 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-0.5">
-                {h.college_name && <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{h.college_name}</p>}
-                {h.college_address && <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">{h.college_address}</p>}
+              <div className="mt-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 space-y-1">
+                {h.college_name && <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{h.college_name}</p>}
+                {h.college_address && <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{h.college_address}</p>}
               </div>
             )}
             {(h.mobile_number || h.email) && (
-              <div className="mt-3 space-y-1.5">
+              <div className="mt-4 space-y-2">
                 {h.mobile_number && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0"><Phone className="w-3 h-3 text-emerald-600" /></div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">{h.mobile_number}</p>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center shrink-0"><Phone className="w-3.5 h-3.5 text-emerald-600" /></div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold">{h.mobile_number}</p>
                   </div>
                 )}
                 {h.email && (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0"><Mail className="w-3 h-3 text-blue-600" /></div>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 break-all font-semibold">{h.email}</p>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center shrink-0"><Mail className="w-3.5 h-3.5 text-blue-600" /></div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 break-all font-semibold">{h.email}</p>
                   </div>
                 )}
               </div>
