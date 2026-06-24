@@ -159,7 +159,7 @@ const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
                   <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{r.title}</h3>
 
                   {r.description && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{r.description}</p>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: r.description }} />
                   )}
 
                   {r.file_url && r.file_name && (
@@ -521,7 +521,7 @@ const CircularsPanel: React.FC = () => {
                   <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{c.title}</h3>
 
                   {c.description && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{c.description}</p>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: c.description }} />
                   )}
 
                   {c.file_url && c.file_name && (
@@ -598,7 +598,7 @@ const NctePanel: React.FC = () => {
                   <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{item.title}</h3>
 
                   {item.description && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">{item.description}</p>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: item.description }} />
                   )}
 
                   {item.file_url && item.file_name && (
@@ -995,7 +995,7 @@ const HodsPanel: React.FC<HodsPanelProps> = ({ onSelectMember }) => {
             </div>
             {h.message && (
               <div className="mt-4 p-4 rounded-xl bg-sky-50/60 dark:bg-sky-900/10 border border-sky-100 dark:border-sky-900/30">
-                <p className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed italic">"{h.message}"</p>
+                <div className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: h.message }} />
               </div>
             )}
             {(h.college_name || h.college_address) && (

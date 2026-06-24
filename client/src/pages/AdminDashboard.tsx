@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar, adminItems } from '../components/Sidebar';
+import { RichTextEditor } from '../components/RichTextEditor';
 import { useTheme } from '../components/ThemeManager';
 import { Donation, Job } from '../types';
 import { 
@@ -37,166 +38,6 @@ interface AdminDashboardProps {
   currentUser: any;
   setCurrentTab: (tab: string) => void;
 }
-
-// ─── Rich Text Editor Component ──────────────────────────────────────────────
-const RichTextEditor: React.FC<{
-  value: string;
-  onChange: (html: string) => void;
-  placeholder?: string;
-  editKey?: any; // bump this to reset editor when switching entries
-}> = ({ value, onChange, placeholder = 'Write details here...', editKey }) => {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const initialized = useRef(false);
-
-  // Seed content on first render or when edit key changes (new entry loaded)
-  useEffect(() => {
-    if (editorRef.current) {
-      editorRef.current.innerHTML = value || '';
-      initialized.current = true;
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editKey]);
-
-  const exec = (cmd: string, val?: string) => {
-    document.execCommand(cmd, false, val || undefined);
-    editorRef.current?.focus();
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  };
-
-  const insertLink = () => {
-    const url = prompt('Enter link URL (e.g. https://example.com):');
-    if (url) {
-      exec('createLink', url);
-    }
-  };
-
-  const insertImageURL = () => {
-    const url = prompt('Enter image URL:');
-    if (url) {
-      exec('insertImage', url);
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (reader.result) {
-        exec('insertImage', reader.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const toolbarItems = [
-    { label: 'B',     cmd: 'bold',                style: 'font-bold',      title: 'Bold' },
-    { label: 'I',     cmd: 'italic',              style: 'italic',         title: 'Italic' },
-    { label: 'U',     cmd: 'underline',           style: 'underline',      title: 'Underline' },
-    { label: 'H1',    cmd: 'formatBlock',         val: 'h2',               title: 'Heading 1' },
-    { label: 'H2',    cmd: 'formatBlock',         val: 'h3',               title: 'Heading 2' },
-    { label: 'H3',    cmd: 'formatBlock',         val: 'h4',               title: 'Heading 3' },
-    { label: 'Para',  cmd: 'formatBlock',         val: 'p',                title: 'Paragraph' },
-    { label: '• List',cmd: 'insertUnorderedList', style: '',               title: 'Bullet List' },
-    { label: '1. List',cmd:'insertOrderedList',   style: '',               title: 'Numbered List' },
-    { label: '⇤',    cmd: 'outdent',             style: '',               title: 'Outdent' },
-    { label: '⇥',    cmd: 'indent',              style: '',               title: 'Indent' },
-  ];
-
-  return (
-    <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-1 p-2.5 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700">
-        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Format:</span>
-        {toolbarItems.map((btn) => (
-          <button
-            key={btn.cmd + btn.label}
-            type="button"
-            title={btn.title}
-            onMouseDown={(e) => { e.preventDefault(); exec(btn.cmd, btn.val); }}
-            className={`px-2 py-1 rounded-lg text-[11px] ${btn.style || ''} font-semibold text-slate-750 dark:text-slate-200 bg-white dark:bg-slate-700 hover:bg-primary hover:text-white border border-slate-200 dark:border-slate-600 transition-all cursor-pointer select-none`}
-          >
-            {btn.label}
-          </button>
-        ))}
-
-        {/* Custom Actions */}
-        <button
-          type="button"
-          title="Insert Link"
-          onClick={insertLink}
-          className="px-2 py-1 rounded-lg text-[11px] font-bold text-sky-600 dark:text-sky-400 bg-white dark:bg-slate-700 hover:bg-sky-500 hover:text-white border border-slate-200 dark:border-slate-600 transition-all cursor-pointer"
-        >
-          🔗 Link
-        </button>
-
-        <button
-          type="button"
-          title="Insert Image by URL"
-          onClick={insertImageURL}
-          className="px-2 py-1 rounded-lg text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-slate-700 hover:bg-emerald-500 hover:text-white border border-slate-200 dark:border-slate-600 transition-all cursor-pointer"
-        >
-          🖼️ Image (URL)
-        </button>
-
-        <button
-          type="button"
-          title="Upload Local Image"
-          onClick={() => imageInputRef.current?.click()}
-          className="px-2 py-1 rounded-lg text-[11px] font-bold text-violet-600 dark:text-violet-400 bg-white dark:bg-slate-700 hover:bg-violet-500 hover:text-white border border-slate-200 dark:border-slate-600 transition-all cursor-pointer"
-        >
-          📤 Upload Pic
-        </button>
-
-        <button
-          type="button"
-          title="Clear Formatting"
-          onMouseDown={(e) => { e.preventDefault(); exec('removeFormat'); }}
-          className="px-2 py-1 rounded-lg text-[11px] font-semibold text-slate-500 dark:text-slate-300 bg-white dark:bg-slate-700 hover:bg-rose-500 hover:text-white border border-slate-200 dark:border-slate-600 transition-all cursor-pointer select-none"
-        >
-          ↩ Clear
-        </button>
-
-        <input
-          ref={imageInputRef}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={handleImageUpload}
-        />
-      </div>
-      {/* Editable Content Area */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => { if (editorRef.current) onChange(editorRef.current.innerHTML); }}
-        className="rich-wysiwyg-editor min-h-56 p-5 text-sm text-slate-800 dark:text-slate-200 focus:outline-none bg-white dark:bg-slate-900/60 leading-relaxed"
-        style={{
-          minHeight: '220px',
-        }}
-        data-placeholder={placeholder}
-      />
-      <style>{`
-        .rich-wysiwyg-editor:empty:before {
-          content: attr(data-placeholder);
-          color: #94a3b8;
-          pointer-events: none;
-          font-style: italic;
-        }
-        .rich-wysiwyg-editor h2 { font-size: 1.5em; font-weight: 700; margin: 0.8em 0 0.4em 0; }
-        .rich-wysiwyg-editor h3 { font-size: 1.25em; font-weight: 600; margin: 0.7em 0 0.3em 0; }
-        .rich-wysiwyg-editor h4 { font-size: 1.1em; font-weight: 600; margin: 0.6em 0 0.2em 0; }
-        .rich-wysiwyg-editor ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
-        .rich-wysiwyg-editor ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
-        .rich-wysiwyg-editor p  { margin: 0.5em 0; }
-        .rich-wysiwyg-editor a  { color: #1d4ed8; text-decoration: underline; }
-        .rich-wysiwyg-editor img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 0.7em 0; }
-      `}</style>
-    </div>
-  );
-};
 
 // ─── Admission Manager Panel Component ───────────────────────────────────────
 interface AdmissionManagerPanelProps {
@@ -1879,12 +1720,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* ── EVENTS-MANAGER TAB ── */}
         {activeSubTab === 'events-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6"><PlusSquare className="w-6 h-6 text-primary" /> Create Event</h2>{eventCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Event successfully added and published to target feeds!</div>}<form onSubmit={handleCreateEvent} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Title</label><input type="text" required={!0} value={evtTitle} onChange={(e) => setEvtTitle(e.target.value)} placeholder="e.g. Annual Alumni Meet 2026" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Category</label><select value={evtType} onChange={(e) => setEvtType(e.target.value as any)} className="glass-input text-slate-500 font-semibold"><option value="Reunion">Reunion Gala</option><option value="Seminar">Seminar (Campus)</option><option value="Webinar">Webinar (Virtual)</option><option value="Networking">Networking Mixer</option></select></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label><textarea rows={3} required={!0} value={evtDesc} onChange={(e) => setEvtDesc(e.target.value)} className="glass-input resize-none" placeholder="Detail activities, speaker schedule, and guidelines..." /></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date</label><input type="date" required={!0} value={evtDate} onChange={(e) => setEvtDate(e.target.value)} className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Time</label><input type="time" required={!0} value={evtTime} onChange={(e) => setEvtTime(e.target.value)} className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attendee Capacity</label><input type="number" required={!0} value={evtCap} onChange={(e) => setEvtCap(e.target.value)} placeholder="250" className="glass-input" /></div></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Location / Zoom Link</label><input type="text" required={!0} value={evtLoc} onChange={(e) => setEvtLoc(e.target.value)} placeholder="e.g. Auditorium / virtual link" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Image URL</label><input type="text" value={evtImg} onChange={(e) => setEvtImg(e.target.value)} placeholder="https://images.unsplash.com/photo-..." className="glass-input" /></div></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md">Publish Event</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Events</h3>{allEvents.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Date & Time</th><th className="p-4">Title</th><th className="p-4">Type & Location</th><th className="p-4 text-center">Capacity</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allEvents.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date} {e.time ? `at ${e.time}` : ""}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4"><span className="font-semibold">{e.type}</span> <br /><span className="text-slate-450 dark:text-slate-400">{e.location}</span></td><td className="p-4 text-center">{e.capacity}</td><td className="p-4 text-center"><button onClick={() => handleDeleteEvent(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No events currently scheduled.</p>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6"><PlusSquare className="w-6 h-6 text-primary" /> Create Event</h2>{eventCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Event successfully added and published to target feeds!</div>}<form onSubmit={handleCreateEvent} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Title</label><input type="text" required={!0} value={evtTitle} onChange={(e) => setEvtTitle(e.target.value)} placeholder="e.g. Annual Alumni Meet 2026" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Category</label><select value={evtType} onChange={(e) => setEvtType(e.target.value as any)} className="glass-input text-slate-500 font-semibold"><option value="Reunion">Reunion Gala</option><option value="Seminar">Seminar (Campus)</option><option value="Webinar">Webinar (Virtual)</option><option value="Networking">Networking Mixer</option></select></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label><RichTextEditor value={evtDesc} onChange={setEvtDesc} placeholder="Detail activities, speaker schedule, and guidelines..." /></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Date</label><input type="date" required={!0} value={evtDate} onChange={(e) => setEvtDate(e.target.value)} className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Time</label><input type="time" required={!0} value={evtTime} onChange={(e) => setEvtTime(e.target.value)} className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Attendee Capacity</label><input type="number" required={!0} value={evtCap} onChange={(e) => setEvtCap(e.target.value)} placeholder="250" className="glass-input" /></div></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Location / Zoom Link</label><input type="text" required={!0} value={evtLoc} onChange={(e) => setEvtLoc(e.target.value)} placeholder="e.g. Auditorium / virtual link" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Event Image URL</label><input type="text" value={evtImg} onChange={(e) => setEvtImg(e.target.value)} placeholder="https://images.unsplash.com/photo-..." className="glass-input" /></div></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md">Publish Event</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Events</h3>{allEvents.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Date & Time</th><th className="p-4">Title</th><th className="p-4">Type & Location</th><th className="p-4 text-center">Capacity</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allEvents.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date} {e.time ? `at ${e.time}` : ""}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4"><span className="font-semibold">{e.type}</span> <br /><span className="text-slate-450 dark:text-slate-400">{e.location}</span></td><td className="p-4 text-center">{e.capacity}</td><td className="p-4 text-center"><button onClick={() => handleDeleteEvent(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No events currently scheduled.</p>}</div></div>
         )}
 
         {/* ── NEWS-MANAGER TAB ── */}
         {activeSubTab === 'news-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Newspaper className="w-6 h-6 text-primary" /> Manage News & Notices</h2><p className="text-sm text-slate-500">Publish news announcements and notice boards which appear in the dynamic column on the Homepage.</p>{newsCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Announcement published successfully to Homepage Notices feed!</div>}<form onSubmit={handleCreateNews} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Title</label><input type="text" required={!0} value={newsTitle} onChange={(e) => setNewsTitle(e.target.value)} placeholder="e.g. PCZSC Annual Athletics Meet Schedule" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={newsDate} onChange={(e) => setNewsDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Description</label><textarea rows={3} required={!0} value={newsDesc} onChange={(e) => setNewsDesc(e.target.value)} className="glass-input resize-none font-light leading-relaxed" placeholder="Provide detailed description of the sports tournament, circular guidelines..." /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image Banner URL (Optional)</label><input type="text" value={newsImg} onChange={(e) => setNewsImg(e.target.value)} placeholder="https://images.unsplash.com/..." className="glass-input" /></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Announcement</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Notices & Announcements</h3>{allNews.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Publish Date</th><th className="p-4">Title</th><th className="p-4">Description Preview</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allNews.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4 truncate max-w-xs">{e.description}</td><td className="p-4 text-center"><button onClick={() => handleDeleteNews(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No announcements currently published.</p>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Newspaper className="w-6 h-6 text-primary" /> Manage News & Notices</h2><p className="text-sm text-slate-500">Publish news announcements and notice boards which appear in the dynamic column on the Homepage.</p>{newsCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Announcement published successfully to Homepage Notices feed!</div>}<form onSubmit={handleCreateNews} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Title</label><input type="text" required={!0} value={newsTitle} onChange={(e) => setNewsTitle(e.target.value)} placeholder="e.g. PCZSC Annual Athletics Meet Schedule" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={newsDate} onChange={(e) => setNewsDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Description</label><RichTextEditor value={newsDesc} onChange={setNewsDesc} placeholder="Provide detailed description of the sports tournament, circular guidelines..." /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image Banner URL (Optional)</label><input type="text" value={newsImg} onChange={(e) => setNewsImg(e.target.value)} placeholder="https://images.unsplash.com/..." className="glass-input" /></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Announcement</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Notices & Announcements</h3>{allNews.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Publish Date</th><th className="p-4">Title</th><th className="p-4">Description Preview</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allNews.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4 truncate max-w-xs">{e.description}</td><td className="p-4 text-center"><button onClick={() => handleDeleteNews(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No announcements currently published.</p>}</div></div>
         )}
 
         {/* ── COMMITTEE-MANAGER TAB ── */}
@@ -2171,7 +2012,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Message / Quote (optional)</label>
-                    <textarea rows={3} value={hodForm.message} onChange={e => setHodForm(f => ({ ...f, message: e.target.value }))} placeholder="A short message from the HOD/Director desk..." className="glass-input resize-none text-sm leading-relaxed" />
+                    <RichTextEditor value={hodForm.message} onChange={html => setHodForm(f => ({ ...f, message: html }))} placeholder="A short message from the HOD/Director desk..." />
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order</label>
@@ -2289,11 +2130,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description / Details</label>
-                <textarea
-                  rows={3}
+                <RichTextEditor
                   value={resDesc}
-                  onChange={(e) => setResDesc(e.target.value)}
-                  className="glass-input resize-none font-light leading-relaxed"
+                  onChange={setResDesc}
                   placeholder="Describe the draw format, match venues, winners, scores, player awards..."
                 />
               </div>
@@ -2358,12 +2197,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* ── CIRCULARS-MANAGER TAB ── */}
         {activeSubTab === 'circulars-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><FileText className="w-6 h-6 text-primary" /> Manage Circulars</h2><p className="text-sm text-slate-500">Publish official circular guidelines, announcements, and PDFs which appear dynamically in the public Circulars subpage.</p>{circularCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Circular notice published successfully to Circulars feed!</div>}<form onSubmit={handleCreateCircular} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Circular Title</label><input type="text" required={!0} value={circularTitle} onChange={(e) => setCircularTitle(e.target.value)} placeholder="e.g. Circular 2026-3: Tournament Guidelines" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={circularDate} onChange={(e) => setCircularDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description Overview</label><textarea rows={3} required={!0} value={circularDesc} onChange={(e) => setCircularDesc(e.target.value)} className="glass-input resize-none font-light leading-relaxed text-sm" placeholder="Summarize the circular contents, rules, or instructions..." /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between gap-4"><div className="space-y-1 text-left"><h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4><p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or spreadsheet guidelines</p><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleCircularFileUpload} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full" /></div>{circularFileName && <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm"><FileText className="w-4 h-4 text-primary shrink-0" /><span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{circularFileName}</span><button type="button" onClick={() => {setCircularFileUrl(null),setCircularFileName(null)}} className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Circular</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Circulars & Guidelines</h3>{allCirculars.length > 0 ? <div className="space-y-2">{allCirculars.map((e) => <div className="group flex items-start gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all"><div className="shrink-0 w-9 h-9 rounded-xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-0.5"><FileText className="w-5 h-5 text-primary" /></div><div className="flex-1 min-w-0"><div className="flex flex-wrap items-center gap-2 mb-1"><span className="text-[10px] text-slate-400 font-semibold">{e.date}</span></div><p className="font-bold text-xs text-slate-800 dark:text-white truncate">{e.title}</p>{e.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{e.description}</p>}{e.file_name && <div className="flex items-center gap-1 mt-1.5"><FileText className="w-3 h-3 text-primary" /><a href={e.file_url} download={e.file_name} className="text-[10px] font-semibold text-primary hover:underline truncate">{e.file_name}</a></div>}</div><button onClick={() => handleDeleteCircular(e.id)} className="shrink-0 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Delete"><Trash2 className="w-4 h-4" /></button></div>)}</div> : <p className="text-slate-400 text-center py-8 text-xs">No circulars published yet. Add one above.</p>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><FileText className="w-6 h-6 text-primary" /> Manage Circulars</h2><p className="text-sm text-slate-500">Publish official circular guidelines, announcements, and PDFs which appear dynamically in the public Circulars subpage.</p>{circularCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Circular notice published successfully to Circulars feed!</div>}<form onSubmit={handleCreateCircular} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Circular Title</label><input type="text" required={!0} value={circularTitle} onChange={(e) => setCircularTitle(e.target.value)} placeholder="e.g. Circular 2026-3: Tournament Guidelines" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={circularDate} onChange={(e) => setCircularDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description Overview</label><RichTextEditor value={circularDesc} onChange={setCircularDesc} placeholder="Summarize the circular contents, rules, or instructions..." /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between gap-4"><div className="space-y-1 text-left"><h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4><p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or spreadsheet guidelines</p><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleCircularFileUpload} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full" /></div>{circularFileName && <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm"><FileText className="w-4 h-4 text-primary shrink-0" /><span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{circularFileName}</span><button type="button" onClick={() => {setCircularFileUrl(null),setCircularFileName(null)}} className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Circular</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Circulars & Guidelines</h3>{allCirculars.length > 0 ? <div className="space-y-2">{allCirculars.map((e) => <div className="group flex items-start gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all"><div className="shrink-0 w-9 h-9 rounded-xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-0.5"><FileText className="w-5 h-5 text-primary" /></div><div className="flex-1 min-w-0"><div className="flex flex-wrap items-center gap-2 mb-1"><span className="text-[10px] text-slate-400 font-semibold">{e.date}</span></div><p className="font-bold text-xs text-slate-800 dark:text-white truncate">{e.title}</p>{e.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{e.description}</p>}{e.file_name && <div className="flex items-center gap-1 mt-1.5"><FileText className="w-3 h-3 text-primary" /><a href={e.file_url} download={e.file_name} className="text-[10px] font-semibold text-primary hover:underline truncate">{e.file_name}</a></div>}</div><button onClick={() => handleDeleteCircular(e.id)} className="shrink-0 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Delete"><Trash2 className="w-4 h-4" /></button></div>)}</div> : <p className="text-slate-400 text-center py-8 text-xs">No circulars published yet. Add one above.</p>}</div></div>
         )}
 
         {/* ── NCTE-MANAGER TAB ── */}
         {activeSubTab === 'ncte-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><ShieldCheck className="w-6 h-6 text-primary" /> Manage NCTE Disclosures</h2><p className="text-sm text-slate-500">Publish official NCTE disclosures, compliance reports, and regulatory PDF certificates which appear dynamically in the public NCTE Mandatory Disclosures subpage.</p>{ncteCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">NCTE disclosure published successfully to Mandatory Disclosures feed!</div>}<form onSubmit={handleCreateNcte} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Disclosure Title</label><input type="text" required={!0} value={ncteTitle} onChange={(e) => setNcteTitle(e.target.value)} placeholder="e.g. NCTE Mandatory Disclosure Report 2026" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={ncteDate} onChange={(e) => setNcteDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description Overview</label><textarea rows={3} required={!0} value={ncteDesc} onChange={(e) => setNcteDesc(e.target.value)} className="glass-input resize-none font-light leading-relaxed text-sm" placeholder="Summarize the compliance document, order number, or certification details..." /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between gap-4"><div className="space-y-1 text-left"><h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4><p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleNcteFileUpload} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full" /></div>{ncteFileName && <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm"><ShieldCheck className="w-4 h-4 text-primary shrink-0" /><span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{ncteFileName}</span><button type="button" onClick={() => {setNcteFileUrl(null),setNcteFileName(null)}} className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish NCTE Disclosure</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active NCTE Disclosures</h3>{allNcte.length > 0 ? <div className="space-y-2">{allNcte.map((e) => <div className="group flex items-start gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all"><div className="shrink-0 w-9 h-9 rounded-xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-0.5"><ShieldCheck className="w-5 h-5 text-primary" /></div><div className="flex-1 min-w-0"><div className="flex flex-wrap items-center gap-2 mb-1"><span className="text-[10px] text-slate-400 font-semibold">{e.date}</span></div><p className="font-bold text-xs text-slate-800 dark:text-white truncate">{e.title}</p>{e.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{e.description}</p>}{e.file_name && <div className="flex items-center gap-1 mt-1.5"><ShieldCheck className="w-3 h-3 text-primary" /><a href={e.file_url} download={e.file_name} className="text-[10px] font-semibold text-primary hover:underline truncate">{e.file_name}</a></div>}</div><button onClick={() => handleDeleteNcte(e.id)} className="shrink-0 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Delete"><Trash2 className="w-4 h-4" /></button></div>)}</div> : <p className="text-slate-400 text-center py-8 text-xs">No disclosures published yet. Add one above.</p>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><ShieldCheck className="w-6 h-6 text-primary" /> Manage NCTE Disclosures</h2><p className="text-sm text-slate-500">Publish official NCTE disclosures, compliance reports, and regulatory PDF certificates which appear dynamically in the public NCTE Mandatory Disclosures subpage.</p>{ncteCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">NCTE disclosure published successfully to Mandatory Disclosures feed!</div>}<form onSubmit={handleCreateNcte} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Disclosure Title</label><input type="text" required={!0} value={ncteTitle} onChange={(e) => setNcteTitle(e.target.value)} placeholder="e.g. NCTE Mandatory Disclosure Report 2026" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={ncteDate} onChange={(e) => setNcteDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description Overview</label><RichTextEditor value={ncteDesc} onChange={setNcteDesc} placeholder="Summarize the compliance document, order number, or certification details..." /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between gap-4"><div className="space-y-1 text-left"><h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4><p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleNcteFileUpload} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full" /></div>{ncteFileName && <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm"><ShieldCheck className="w-4 h-4 text-primary shrink-0" /><span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{ncteFileName}</span><button type="button" onClick={() => {setNcteFileUrl(null),setNcteFileName(null)}} className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish NCTE Disclosure</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active NCTE Disclosures</h3>{allNcte.length > 0 ? <div className="space-y-2">{allNcte.map((e) => <div className="group flex items-start gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all"><div className="shrink-0 w-9 h-9 rounded-xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-0.5"><ShieldCheck className="w-5 h-5 text-primary" /></div><div className="flex-1 min-w-0"><div className="flex flex-wrap items-center gap-2 mb-1"><span className="text-[10px] text-slate-400 font-semibold">{e.date}</span></div><p className="font-bold text-xs text-slate-800 dark:text-white truncate">{e.title}</p>{e.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{e.description}</p>}{e.file_name && <div className="flex items-center gap-1 mt-1.5"><ShieldCheck className="w-3 h-3 text-primary" /><a href={e.file_url} download={e.file_name} className="text-[10px] font-semibold text-primary hover:underline truncate">{e.file_name}</a></div>}</div><button onClick={() => handleDeleteNcte(e.id)} className="shrink-0 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Delete"><Trash2 className="w-4 h-4" /></button></div>)}</div> : <p className="text-slate-400 text-center py-8 text-xs">No disclosures published yet. Add one above.</p>}</div></div>
         )}
 
         {/* ── ABOUT-MANAGER TAB ── */}
@@ -2704,13 +2543,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Job Description</label>
-                  <textarea
-                    rows={4}
-                    required
+                  <RichTextEditor
                     value={jobDesc}
-                    onChange={e => setJobDesc(e.target.value)}
-                    className="glass-input text-xs resize-none"
-                  ></textarea>
+                    onChange={setJobDesc}
+                    placeholder="Provide full description of the job..."
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
@@ -3189,13 +3026,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
               <div className="flex flex-col gap-1.5 text-xs">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quote / Success Story Description *</label>
-                <textarea
-                  rows={4}
-                  required
+                <RichTextEditor
                   value={spotForm.text}
-                  onChange={(e) => setSpotForm((prev) => ({ ...prev, text: e.target.value }))}
-                  placeholder="e.g. &quot;My years at Apex University formed the bedrock of my career...&quot;"
-                  className="glass-input resize-none font-light leading-relaxed text-sm"
+                  onChange={(html) => setSpotForm((prev) => ({ ...prev, text: html }))}
+                  placeholder="e.g. My years at Apex University formed the bedrock of my career..."
                 />
               </div>
 

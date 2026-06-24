@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlumniCard } from '../components/AlumniCard';
+import { RichTextEditor } from '../components/RichTextEditor';
 import { AlumniProfile } from '../types';
 import { Search, Filter, RefreshCw, MessageSquare, Send, Check } from 'lucide-react';
 
@@ -259,14 +260,11 @@ export const Directory: React.FC<DirectoryProps> = ({ currentUser, setCurrentTab
               <form onSubmit={handleMessageSubmit} className="space-y-4 text-left">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Message Content</label>
-                  <textarea
-                    required
-                    rows={4}
+                  <RichTextEditor
                     value={messageText}
-                    onChange={e => setMessageText(e.target.value)}
+                    onChange={setMessageText}
                     placeholder="Introduce yourself and state the purpose of your connection request..."
-                    className="glass-input text-xs w-full resize-none"
-                  ></textarea>
+                  />
                 </div>
 
                 <div className="flex gap-2 pt-2">

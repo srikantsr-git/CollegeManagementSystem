@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Sidebar, alumniItems } from '../components/Sidebar';
+import { RichTextEditor } from '../components/RichTextEditor';
 import { DigitalAlumniCard } from '../components/DigitalAlumniCard';
 import { AlumniProfile, Mentorship, Job, Donation } from '../types';
 import { 
@@ -490,13 +491,11 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
 
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Professional Achievements</label>
-                <textarea
-                  rows={3}
+                <RichTextEditor
                   value={achievements}
-                  onChange={e => setAchievements(e.target.value)}
-                  className="glass-input text-xs resize-none"
+                  onChange={setAchievements}
                   placeholder="Summarize outstanding awards, fellowships, or publications..."
-                ></textarea>
+                />
               </div>
 
               <button type="submit" className="btn-primary py-3 px-8 text-xs font-bold shadow-md shadow-primary/20">
@@ -601,13 +600,11 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Job Description</label>
-                  <textarea
-                    rows={4}
-                    required
+                  <RichTextEditor
                     value={jobDesc}
-                    onChange={e => setJobDesc(e.target.value)}
-                    className="glass-input text-xs resize-none"
-                  ></textarea>
+                    onChange={setJobDesc}
+                    placeholder="Provide details about the job, responsibilities and benefits..."
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1.5">

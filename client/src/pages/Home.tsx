@@ -12,6 +12,8 @@ interface HomeProps {
   currentUser: any;
 }
 
+const stripHtml = (html: string) => html ? html.replace(/<[^>]*>/g, '') : '';
+
 // ─── CSS keyframes injected once ──────────────────────────────────────────────
 const SLIDER_STYLE = `
 @keyframes heroFadeUp {
@@ -342,7 +344,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
                       {news.title}
                     </h4>
                     <p className="text-[10px] text-slate-450 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed font-light">
-                      {news.description}
+                      {stripHtml(news.description)}
                     </p>
                   </div>
                 ))
@@ -429,9 +431,9 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
             className="w-48 h-48 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 flex-shrink-0"
           />
           <div className="text-left space-y-4">
-            <p className="text-lg italic text-slate-600 dark:text-slate-300 leading-relaxed font-light">
-              {successStories[activeStoryIdx].text}
-            </p>
+            <div className="text-lg italic text-slate-600 dark:text-slate-300 leading-relaxed font-light html-content"
+              dangerouslySetInnerHTML={{ __html: successStories[activeStoryIdx].text }}
+            />
             <div>
               <h4 className="font-extrabold text-lg text-slate-800 dark:text-white flex items-center gap-2">
                 {successStories[activeStoryIdx].name}
@@ -517,7 +519,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
                       {n.title}
                     </h4>
                   </div>
-                  <p className="text-[11px] text-slate-500 line-clamp-2 mt-2 leading-relaxed font-light">{n.description}</p>
+                  <p className="text-[11px] text-slate-500 line-clamp-2 mt-2 leading-relaxed font-light">{stripHtml(n.description)}</p>
                 </div>
               </div>
             ))}
@@ -564,9 +566,9 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
               <h3 className="text-xl font-extrabold text-slate-800 dark:text-white leading-snug">
                 {selectedNews.title}
               </h3>
-              <p className="text-sm text-slate-650 dark:text-slate-300 leading-relaxed font-light whitespace-pre-line max-h-60 overflow-y-auto pr-1">
-                {selectedNews.description}
-              </p>
+              <div className="text-sm text-slate-650 dark:text-slate-300 leading-relaxed font-light max-h-60 overflow-y-auto pr-1 html-content"
+                dangerouslySetInnerHTML={{ __html: selectedNews.description }}
+              />
               
               <div className="pt-2 flex justify-end">
                 <button

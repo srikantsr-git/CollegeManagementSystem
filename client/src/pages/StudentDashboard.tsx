@@ -481,7 +481,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
                       </div>
 
                       <div className="text-slate-600 dark:text-slate-300 space-y-2 leading-relaxed pt-2 border-t border-slate-100 dark:border-slate-800">
-                        <p><strong>Description:</strong> {job.description}</p>
+                        <div className="html-content">
+                          <strong>Description:</strong>
+                          <div dangerouslySetInnerHTML={{ __html: job.description }} />
+                        </div>
                         <p><strong>Requirements:</strong> {job.requirements}</p>
                         {job.salary && <p><strong>Compensation:</strong> <span className="text-primary font-bold">{job.salary}</span></p>}
                       </div>
