@@ -1338,9 +1338,21 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
                     </div>
                     <div className="p-6 sm:p-8">
                       {pageData.content ? (
-                        <p className="text-base text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-light">
-                          {pageData.content}
-                        </p>
+                        <>
+                          <div className="text-base text-slate-600 dark:text-slate-300 leading-relaxed font-light html-content text-left"
+                            dangerouslySetInnerHTML={{ __html: pageData.content }}
+                          />
+                          <style>{`
+                            .html-content h2 { font-size: 1.45em; font-weight: 700; margin: 0.8em 0 0.4em 0; }
+                            .html-content h3 { font-size: 1.25em; font-weight: 600; margin: 0.7em 0 0.3em 0; }
+                            .html-content h4 { font-size: 1.1em; font-weight: 600; margin: 0.6em 0 0.2em 0; }
+                            .html-content ul { list-style: disc; padding-left: 1.5em; margin: 0.5em 0; }
+                            .html-content ol { list-style: decimal; padding-left: 1.5em; margin: 0.5em 0; }
+                            .html-content p  { margin: 0.5em 0; }
+                            .html-content a  { color: #0284c7; text-decoration: underline; font-weight: 600; }
+                            .html-content img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 0.8em 0; display: block; }
+                          `}</style>
+                        </>
                       ) : (
                         <p className="text-sm text-slate-400 italic py-4">
                           No description provided yet. An administrator can add content from the Admin Dashboard.
