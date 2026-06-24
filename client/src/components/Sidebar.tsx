@@ -3,8 +3,59 @@ import {
   User, Users, Briefcase, Award, Heart, ClipboardCheck, 
   Settings, BarChart3, GraduationCap, Calendar, PlusSquare,
   Newspaper, FileText, SlidersHorizontal, Trophy, CreditCard,
-  ShieldCheck, BookOpen, UserCheck, Sparkles
+  ShieldCheck, BookOpen, UserCheck, Sparkles, LayoutDashboard
 } from 'lucide-react';
+
+export interface NavigationItem {
+  id: string;
+  label: string;
+  description: string;
+  icon: React.ComponentType<any>;
+}
+
+export const studentItems: NavigationItem[] = [
+  { id: 'dashboard', label: 'Dashboard Hub', description: 'Overview of all student portal features and activities', icon: LayoutDashboard },
+  { id: 'profile', label: 'My Profile', description: 'Update your degree, contact details, and resume link', icon: User },
+  { id: 'alumni-search', label: 'Alumni Directory', description: 'Search, connect, and network with graduated alumni', icon: Users },
+  { id: 'mentorship', label: 'Mentorship Program', description: 'Track your active mentor matches and schedule calls', icon: Award },
+  { id: 'jobs', label: 'Internships & Careers', description: 'Explore and apply for internships and career opportunities', icon: Briefcase },
+  { id: 'events', label: 'Events Registry', description: 'View and register for upcoming college events and reunions', icon: Calendar },
+  { id: 'digital-card', label: 'Digital Student Card', description: 'Access your digital student identification card', icon: GraduationCap },
+];
+
+export const alumniItems: NavigationItem[] = [
+  { id: 'dashboard', label: 'Dashboard Hub', description: 'Overview of all alumni portal features and actions', icon: LayoutDashboard },
+  { id: 'profile', label: 'Profile Management', description: 'Update your professional experience, skills, and details', icon: User },
+  { id: 'networking', label: 'Alumni Network', description: 'Browse the directory and connect with other alumni', icon: Users },
+  { id: 'jobs', label: 'Post / Apply Jobs', description: 'Post career opportunities or apply for roles', icon: Briefcase },
+  { id: 'mentorship', label: 'Mentorship Requests', description: 'Review student mentorship requests and schedule chats', icon: Award },
+  { id: 'events', label: 'Alumni Events', description: 'View and register for alumni meetups and webinars', icon: Calendar },
+  { id: 'donations', label: 'Donations & Giving', description: 'Support the college through secure online donations', icon: Heart },
+  { id: 'digital-card', label: 'Digital Alumni Card', description: 'Access your premium digital alumni association card', icon: CreditCard },
+];
+
+export const adminItems: NavigationItem[] = [
+  { id: 'dashboard', label: 'Dashboard Hub', description: 'Administration overview hub and system controls', icon: LayoutDashboard },
+  { id: 'approvals', label: 'Verification Center', description: 'Review and verify student & alumni registrations', icon: ClipboardCheck },
+  { id: 'events-manager', label: 'Create Event', description: 'Create, schedule, and publish events to the platform', icon: PlusSquare },
+  { id: 'news-manager', label: 'Manage News', description: 'Publish notices, updates, and announcements', icon: Newspaper },
+  { id: 'circulars-manager', label: 'Manage Circulars', description: 'Publish official college circular documents', icon: FileText },
+  { id: 'ncte-manager', label: 'NCTE Disclosures', description: 'Update and manage NCTE compliance disclosures', icon: ShieldCheck },
+  { id: 'committee-manager', label: 'Manage Committee', description: 'Manage members of Pune City Zone Sports Committee', icon: Users },
+  { id: 'directors-manager', label: 'Manage Directors', description: 'Manage Physical Education Directors index', icon: Users },
+  { id: 'hods-manager', label: 'Manage HODs Desk', description: 'Update messages from HODs and Directors desk', icon: Users },
+  { id: 'results-manager', label: 'Draws & Results', description: 'Publish sports tournament results and schedules', icon: Trophy },
+  { id: 'about-manager', label: 'Manage About Pages', description: 'Edit about pages and core institutional content', icon: FileText },
+  { id: 'courses-manager', label: 'Manage Courses', description: 'Manage undergraduate and postgraduate courses', icon: BookOpen },
+  { id: 'admission-manager', label: 'Manage Admissions', description: 'Manage admission announcements and eligibility details', icon: UserCheck },
+  { id: 'jobs', label: 'Post / Apply Jobs', description: 'Moderate and review posted career opportunities', icon: Briefcase },
+  { id: 'spotlight-manager', label: 'Manage Spotlight', description: 'Highlight success stories of distinguished alumni', icon: Sparkles },
+  { id: 'slider-manager', label: 'Hero Slider', description: 'Update home page hero slider slides and images', icon: SlidersHorizontal },
+  { id: 'donations-manager', label: 'Donations Tracker', description: 'Track and audit donor contributions and campaigns', icon: Heart },
+  { id: 'branding', label: 'Branding Settings', description: 'Customize logos, college name, and theme presets', icon: Settings },
+  { id: 'analytics', label: 'System Analytics', description: 'Inspect portal traffic, demographics, and trends', icon: BarChart3 },
+];
+
 interface SidebarProps {
   role: 'student' | 'alumni' | 'admin';
   activeTab: string;
@@ -12,46 +63,6 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab }) => {
-  
-  const studentItems = [
-    { id: 'profile', label: 'My Profile', icon: User },
-    { id: 'alumni-search', label: 'Alumni Directory', icon: Users },
-    { id: 'mentorship', label: 'Mentorship Program', icon: Award },
-    { id: 'jobs', label: 'Internships & Careers', icon: Briefcase },
-    { id: 'events', label: 'Events Registry', icon: Calendar },
-    { id: 'digital-card', label: 'Digital Student Card', icon: GraduationCap },
-  ];
-
-  const alumniItems = [
-    { id: 'profile', label: 'Profile Management', icon: User },
-    { id: 'networking', label: 'Alumni Network', icon: Users },
-    { id: 'jobs', label: 'Post / Apply Jobs', icon: Briefcase },
-    { id: 'mentorship', label: 'Mentorship Requests', icon: Award },
-    { id: 'events', label: 'Alumni Events', icon: Calendar },
-    { id: 'donations', label: 'Donations & Giving', icon: Heart },
-    { id: 'digital-card', label: 'Digital Alumni Card', icon: CreditCard },
-  ];
-  const adminItems = [
-    { id: 'approvals', label: 'Verification Center', icon: ClipboardCheck },
-    { id: 'events-manager', label: 'Create Event', icon: PlusSquare },
-    { id: 'news-manager', label: 'Manage News', icon: Newspaper },
-    { id: 'circulars-manager', label: 'Manage Circulars', icon: FileText },
-    { id: 'ncte-manager', label: 'NCTE Disclosures', icon: ShieldCheck },
-    { id: 'committee-manager', label: 'Manage Committee', icon: Users },
-    { id: 'directors-manager', label: 'Manage Directors', icon: Users },
-    { id: 'hods-manager', label: 'Manage HODs Desk', icon: Users },
-    { id: 'results-manager', label: 'Draws & Results', icon: Trophy },
-    { id: 'about-manager', label: 'Manage About Pages', icon: FileText },
-    { id: 'courses-manager', label: 'Manage Courses', icon: BookOpen },
-    { id: 'admission-manager', label: 'Manage Admissions', icon: UserCheck },
-    { id: 'jobs', label: 'Post / Apply Jobs', icon: Briefcase },
-    { id: 'spotlight-manager', label: 'Manage Spotlight', icon: Sparkles },
-    { id: 'slider-manager', label: 'Hero Slider', icon: SlidersHorizontal },
-    { id: 'donations-manager', label: 'Donations Tracker', icon: Heart },
-    { id: 'branding', label: 'Branding Settings', icon: Settings },
-    { id: 'analytics', label: 'System Analytics', icon: BarChart3 },
-  ];
-
   const menuItems = role === 'admin' ? adminItems : role === 'alumni' ? alumniItems : studentItems;
 
   return (
@@ -83,3 +94,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab 
     </aside>
   );
 };
+

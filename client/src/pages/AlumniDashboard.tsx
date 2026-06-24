@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Sidebar } from '../components/Sidebar';
+import { Sidebar, alumniItems } from '../components/Sidebar';
 import { DigitalAlumniCard } from '../components/DigitalAlumniCard';
 import { AlumniProfile, Mentorship, Job, Donation } from '../types';
 import { 
   User, Users, Briefcase, Award, Heart, ClipboardCheck, Calendar,
-  MessageSquare, PlusCircle, CheckCircle, XCircle, ArrowRight, Download, CreditCard
+  MessageSquare, PlusCircle, CheckCircle, XCircle, ArrowRight, Download, CreditCard, LayoutDashboard
 } from 'lucide-react';
 
 interface AlumniDashboardProps {
@@ -13,7 +13,7 @@ interface AlumniDashboardProps {
 }
 
 export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, setCurrentTab }) => {
-  const [activeSubTab, setActiveSubTab] = useState('profile');
+  const [activeSubTab, setActiveSubTab] = useState('dashboard');
   const [profile, setProfile] = useState<AlumniProfile | null>(null);
   const [mentorships, setMentorships] = useState<Mentorship[]>([]);
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
@@ -281,6 +281,53 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
       <Sidebar role="alumni" activeTab={activeSubTab} setActiveTab={setActiveSubTab} />
 
       <div className="flex-1 text-left space-y-6">
+        {/* ── DASHBOARD HUB TAB ── */}
+        {activeSubTab === 'dashboard' && (
+          <div className="space-y-6">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white flex items-center gap-2.5">
+                    <LayoutDashboard className="w-8 h-8 text-primary animate-pulse" />
+                    Alumni Portal Hub
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Welcome back, <span className="font-bold text-slate-700 dark:text-slate-350">{currentUser.full_name || 'Alumnus'}</span>. Review your network, post career opportunities, support campaigns, or view upcoming events.
+                  </p>
+                </div>
+                <div className="bg-primary/10 text-primary border border-primary/20 rounded-2xl px-4 py-2.5 text-xs font-bold text-center shrink-0">
+                  🎓 Registered Alumni Portal
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+                {alumniItems.filter(item => item.id !== 'dashboard').map(item => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveSubTab(item.id)}
+                      className="glass-card p-6 rounded-2xl border border-slate-200/40 dark:border-slate-800/40 hover:border-primary/45 hover:bg-slate-50/50 dark:hover:bg-slate-950/20 text-left transition-all duration-300 group flex flex-col justify-between h-40 cursor-pointer hover:shadow-xl hover:shadow-primary/5"
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <div className="mt-4">
+                        <h3 className="font-extrabold text-sm text-slate-800 dark:text-white group-hover:text-primary transition-colors duration-200">
+                          {item.label}
+                        </h3>
+                        <p className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500 mt-1 line-clamp-2">
+                          {item.description}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PROFILE TAB */}
         {activeSubTab === 'profile' && (
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
