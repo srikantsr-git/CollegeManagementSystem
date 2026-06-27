@@ -9,6 +9,8 @@ import { AlumniDashboard } from './pages/AlumniDashboard';
 import { StudentDashboard } from './pages/StudentDashboard';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AboutPage } from './pages/AboutPage';
+import GalleryPage from './pages/GalleryPage';
+import PlacementPage from './pages/PlacementPage';
 
 import { Event, Job } from './types';
 import {
@@ -551,6 +553,16 @@ const MainAppContent: React.FC = () => {
             {/* 7.7. STUDENT CORNER SUBPAGES */}
             {currentTab.startsWith('student-') && (
               <AboutPage subpageId={currentTab.replace('student-', '')} setCurrentTab={setCurrentTab} />
+            )}
+
+            {/* 7.8. GALLERY PAGE */}
+            {currentTab === 'gallery' && (
+              <GalleryPage />
+            )}
+
+            {/* 7.9. PLACEMENTS PAGE */}
+            {currentTab === 'placements' && (
+              <PlacementPage />
             )}
 
             {/* 8. AUTH PAGE VIEW PORT */}

@@ -258,6 +258,8 @@ CREATE TABLE IF NOT EXISTS custom_pages (
   content TEXT,
   file_url TEXT,
   file_name TEXT,
+  parent_menu TEXT DEFAULT 'about',
+  menu_type TEXT DEFAULT 'child',
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -272,16 +274,16 @@ INSERT OR REPLACE INTO news (id, title, description, date, image_url)
 VALUES (3, 'New Sports Complex Construction Begins', 'Construction has officially started on our new multi-purpose sports complex, sponsored by class of 2014.', '2026-06-10', 'https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=500&q=80');
 
 -- Seed default custom pages
-INSERT OR REPLACE INTO custom_pages (id, title, content, file_url, file_name) VALUES 
-('about_us', 'About Us', 'Apex University Pune City Zone Sports Committee (PCZSC) promotes athletic excellence, organizes collegiate tournaments, and strengthens community health through a variety of sports leagues, events, and training programs.', NULL, NULL),
-('committee', 'PCZSC Committee', 'The Pune City Zone Sports Committee comprises distinguished physical education directors, principals, and coordinators dedicated to organizing zonals, state-level selections, and governing collegiate sports events.', NULL, NULL),
-('director', 'Director of Phy. Edu.', 'A message from the Director of Physical Education: "Our vision is to build a robust sports ecosystem that encourages high participation, fosters teamwork, and produces state and national-level champions."', NULL, NULL),
-('circulars', 'Circulars', 'Download the latest administrative circulars, guidelines for tournament registration, eligibility forms, and official announcements here.', NULL, NULL),
-('souvenirs', 'Souvenirs', 'Browse our digital souvenirs, annual sports magazines, history of trophies, and memorable group photographs from previous collegiate meets.', NULL, NULL),
-('calendar', 'Sports Calendar', 'Schedule of all upcoming inter-collegiate matches, athletics selections, and zone-level tournaments for the academic year 2026.', NULL, NULL),
-('draws', 'Sports Draws', 'Check tournament bracket draws, match timetables, and team schedules for collegiate matches.', NULL, NULL),
-('results', 'Sports Results', 'Check tournament bracket draws, match timetables, and final event results. Keep track of tournament champions and runners-up.', NULL, NULL),
-('courses', 'Academic Courses', 'The Department of Physical Education offers dynamic teacher education and sports science programs including B.P.Ed., M.P.Ed., and Ph.D. degrees to nurture sports administrators and educators.', NULL, NULL),
+INSERT OR REPLACE INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type) VALUES 
+('about_us', 'About Us', 'Apex University Pune City Zone Sports Committee (PCZSC) promotes athletic excellence, organizes collegiate tournaments, and strengthens community health through a variety of sports leagues, events, and training programs.', NULL, NULL, 'about', 'child'),
+('committee', 'PCZSC Committee', 'The Pune City Zone Sports Committee comprises distinguished physical education directors, principals, and coordinators dedicated to organizing zonals, state-level selections, and governing collegiate sports events.', NULL, NULL, 'about', 'child'),
+('director', 'Director of Phy. Edu.', 'A message from the Director of Physical Education: "Our vision is to build a robust sports ecosystem that encourages high participation, fosters teamwork, and produces state and national-level champions."', NULL, NULL, 'about', 'child'),
+('circulars', 'Circulars', 'Download the latest administrative circulars, guidelines for tournament registration, eligibility forms, and official announcements here.', NULL, NULL, 'about', 'child'),
+('souvenirs', 'Souvenirs', 'Browse our digital souvenirs, annual sports magazines, history of trophies, and memorable group photographs from previous collegiate meets.', NULL, NULL, 'student', 'child'),
+('calendar', 'Sports Calendar', 'Schedule of all upcoming inter-collegiate matches, athletics selections, and zone-level tournaments for the academic year 2026.', NULL, NULL, 'student', 'child'),
+('draws', 'Sports Draws', 'Check tournament bracket draws, match timetables, and team schedules for collegiate matches.', NULL, NULL, 'student', 'child'),
+('results', 'Sports Results', 'Check tournament bracket draws, match timetables, and final event results. Keep track of tournament champions and runners-up.', NULL, NULL, 'student', 'child'),
+('courses', 'Academic Courses', 'The Department of Physical Education offers dynamic teacher education and sports science programs including B.P.Ed., M.P.Ed., and Ph.D. degrees to nurture sports administrators and educators.', NULL, NULL, 'academic', 'child'),
 ('admission', 'Admissions Notice & Prospectus', 'Certificate / Foundation Course in Yoga Education (FCYE) :
 The Department is offering a Three-Month Foundation Course in Yoga Education (formerly known as Certificate Course in Yoga Education) twice a year.
 
@@ -299,9 +301,9 @@ Course Details :
 Course Fees :
 - For Indian Nationals : Tuition Fee Rs. 20,000/- + Other Fees as per University Rules
 - For International Students : Tuition Fee Rs. 60,000/- + Other Fees as per University Rules
-*International Students should apply through the International Centre, SPPU', NULL, NULL),
-('syllabus', 'Syllabus & Course Structure', 'Download detailed curriculum schemes, credit distributions, and semester-wise syllabus guidelines for all physical education and sports sciences programs.', NULL, NULL),
-('academic_results', 'Academic Examination Results', 'Check examination results, internal assessment scores, merit lists, and official marksheets for various physical education programs here.', NULL, NULL);
+*International Students should apply through the International Centre, SPPU', NULL, NULL, 'academic', 'child'),
+('syllabus', 'Syllabus & Course Structure', 'Download detailed curriculum schemes, credit distributions, and semester-wise syllabus guidelines for all physical education and sports sciences programs.', NULL, NULL, 'academic', 'child'),
+('academic_results', 'Academic Examination Results', 'Check examination results, internal assessment scores, merit lists, and official marksheets for various physical education programs here.', NULL, NULL, 'academic', 'child');
 
 -- Create courses table
 CREATE TABLE IF NOT EXISTS courses (
@@ -454,5 +456,42 @@ CREATE TABLE IF NOT EXISTS hods (
   sort_order INTEGER DEFAULT 0,
   profile_pdf_url TEXT,
   profile_pdf_name TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create photo gallery table
+CREATE TABLE IF NOT EXISTS gallery (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  description TEXT,
+  category TEXT NOT NULL DEFAULT 'General',
+  image_url TEXT NOT NULL,
+  photographer TEXT,
+  location TEXT,
+  date TEXT,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Placement page content
+CREATE TABLE IF NOT EXISTS placement_content (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  hero_title TEXT DEFAULT 'Placements',
+  hero_subtitle TEXT DEFAULT 'Building careers, Shaping futures',
+  content TEXT DEFAULT '',
+  stat_placed INTEGER DEFAULT 0,
+  stat_companies INTEGER DEFAULT 0,
+  stat_package_avg TEXT DEFAULT '0 LPA',
+  stat_package_highest TEXT DEFAULT '0 LPA',
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Placement companies (recruiter logos)
+CREATE TABLE IF NOT EXISTS placement_companies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  logo_url TEXT,
+  website TEXT,
+  sort_order INTEGER DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

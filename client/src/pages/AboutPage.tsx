@@ -1041,8 +1041,32 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
     profile_pdf_url?: string | null;
   } | null>(null);
 
-  const meta = getMeta(subpageId);
+  const [customPages, setCustomPages] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/custom-pages')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setCustomPages(data))
+      .catch(err => console.warn('AboutPage failed to fetch custom pages:', err));
+  }, [subpageId]);
+
+  const dynamicPages = customPages
+    .filter((p: any) => !ABOUT_PAGES.some(sp => sp.id === p.id))
+    .map((p: any) => ({
+      id: p.id,
+      group: p.parent_menu || 'about',
+      label: p.title,
+      icon: FileText,
+      color: p.parent_menu === 'academic' ? 'from-purple-600 to-indigo-600' : p.parent_menu === 'student' ? 'from-orange-500 to-red-600' : p.parent_menu === 'none' ? 'from-slate-600 to-gray-700' : 'from-blue-600 to-indigo-700',
+      badge: p.parent_menu === 'academic' ? 'Programs' : p.parent_menu === 'student' ? 'Activities' : p.parent_menu === 'none' ? 'Overview' : 'Custom Page',
+      description: `Custom page for ${p.title}`
+    }));
+
+  const allPages = [...ABOUT_PAGES, ...dynamicPages];
+  const meta = allPages.find((p) => p.id === subpageId) ?? allPages[0] ?? ABOUT_PAGES[0];
   const Icon = meta.icon;
+  const hasSidebar = meta.group !== 'none' && meta.group !== 'standalone';
+
   const isResults = subpageId === 'results';
   const isDraws = subpageId === 'draws';
   const isCourses = subpageId === 'courses';
@@ -1056,7 +1080,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
 
   useEffect(() => {
     setSelectedMember(null);
-    if (isResults || isDraws || isCourses || isCirculars || isCommittee || isDirector || isNcte || isHods) { setLoading(false); return; }
+    if (isResults || isDraws || isCourses || isCirculars || isCommittee || isDirector || isNcte || isHods || isAdmission) { setLoading(false); return; }
 
     setLoading(true);
     setError(null);
@@ -1116,37 +1140,49 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
         </div>
       </div>
 
-      {/* â”€â”€ Body Grid â”€â”€ */}
+      {/* ── Body Grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
 
         {/* Left Sidebar Navigation */}
-        <aside className="lg:col-span-1">
-          <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden sticky top-24">
-            <nav className="p-2 space-y-0.5">
-              {ABOUT_PAGES.filter(page => page.group === meta.group).map((page) => {
-                const PageIcon = page.icon;
-                const isActive = page.id === subpageId;
-                return (
-                  <button key={page.id}
-                    onClick={() => setCurrentTab?.(`${page.group}-${page.id}`)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
-                      isActive ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
-                    }`}
-                  >
-                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
-                      <PageIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                    </span>
-                    <span className="text-left leading-tight">{page.label}</span>
-                    {isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
-        </aside>
+        {hasSidebar && (
+          <aside className="lg:col-span-1">
+            <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden sticky top-24">
+              <nav className="p-2 space-y-0.5">
+                {allPages.filter(page => page.group === meta.group).map((page) => {
+                  const PageIcon = page.icon;
+                  const isActive = page.id === subpageId;
+                  return (
+                    <button key={page.id}
+                      onClick={() => {
+                        if (page.id === 'events') {
+                          setCurrentTab?.('events');
+                        } else if (page.id === 'stories') {
+                          setCurrentTab?.('stories');
+                        } else if (page.id === 'careers') {
+                          setCurrentTab?.('jobs');
+                        } else {
+                          setCurrentTab?.(`${page.group}-${page.id}`);
+                        }
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
+                        isActive ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
+                      }`}
+                    >
+                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
+                        <PageIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
+                      </span>
+                      <span className="text-left leading-tight">{page.label}</span>
+                      {isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </aside>
+        )}
 
         {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className={hasSidebar ? "lg:col-span-3 space-y-6" : "lg:col-span-4 space-y-6"}>
 
           {/* â”€â”€ DRAWS: Dynamic Feed â”€â”€ */}
           {isDraws && (
@@ -1414,13 +1450,13 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
         </div>
       </div>
 
-      {/* â”€â”€ Quick Navigation Tiles â”€â”€ */}
+      {/* ── Quick Navigation Tiles ── */}
       <div className="mt-20 pt-10 border-t border-slate-200/50 dark:border-slate-800/40">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
           Explore Other {meta.group === 'academic' ? 'Academic' : meta.group === 'student' ? 'Student Corner' : 'About'} Pages
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {ABOUT_PAGES.filter((p) => p.id !== subpageId && p.group === meta.group).map((page) => {
+          {allPages.filter((p) => p.id !== subpageId && p.group === ((meta.group === 'none' || meta.group === 'standalone') ? 'about' : meta.group)).map((page) => {
             const PageIcon = page.icon;
             return (
               <button key={page.id}

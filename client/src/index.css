@@ -108,3 +108,27 @@ body.dark {
 .html-content a  { color: #0284c7; text-decoration: underline; font-weight: 600; }
 .html-content img { max-width: 100%; height: auto; border-radius: 0.75rem; margin: 0.8em 0; display: block; }
 
+
+/* --- Placement Page Marquee Animations --- */
+@keyframes marquee-left {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.3333%); }
+}
+
+@keyframes marquee-right {
+  0%   { transform: translateX(-33.3333%); }
+  100% { transform: translateX(0); }
+}
+
+.animate-marquee-left {
+  animation: marquee-left 28s linear infinite;
+}
+
+.animate-marquee-right {
+  animation: marquee-right 28s linear infinite;
+}
+
+.animate-marquee-left:hover,
+.animate-marquee-right:hover {
+  animation-play-state: paused;
+}

@@ -27,6 +27,11 @@ function initializeDatabase() {
         console.error('Error executing schema.sql:', err.message);
       } else {
         console.log('Database schema verified & seeded successfully.');
+        db.run("ALTER TABLE custom_pages ADD COLUMN parent_menu TEXT DEFAULT 'about';", () => {
+          db.run("UPDATE custom_pages SET parent_menu = 'academic' WHERE id IN ('courses', 'admission', 'syllabus', 'academic_results');", () => {});
+          db.run("UPDATE custom_pages SET parent_menu = 'student' WHERE id IN ('souvenirs', 'calendar', 'draws', 'results');", () => {});
+        });
+        db.run("ALTER TABLE custom_pages ADD COLUMN menu_type TEXT DEFAULT 'child';", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_url TEXT;", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_name TEXT;", () => {});
         db.run("ALTER TABLE directors ADD COLUMN profile_pdf_url TEXT;", () => {});
@@ -55,6 +60,54 @@ function initializeDatabase() {
             });
           }
         });
+
+        // Create gallery table if not exists (migration-safe)
+        db.run(`CREATE TABLE IF NOT EXISTS gallery (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT,
+          category TEXT NOT NULL DEFAULT 'General',
+          image_url TEXT NOT NULL,
+          photographer TEXT,
+          location TEXT,
+          date TEXT,
+          sort_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`, () => {});
+
+        // Create placement tables (migration-safe)
+        db.run(`CREATE TABLE IF NOT EXISTS placement_content (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          hero_title TEXT DEFAULT 'Placements',
+          hero_subtitle TEXT DEFAULT 'Building careers, Shaping futures',
+          content TEXT DEFAULT '',
+          stat_placed INTEGER DEFAULT 0,
+          stat_companies INTEGER DEFAULT 0,
+          stat_package_avg TEXT DEFAULT '0 LPA',
+          stat_package_highest TEXT DEFAULT '0 LPA',
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`, () => {
+          db.get('SELECT COUNT(*) as count FROM placement_content', (e, row) => {
+            if (!e && row && row.count === 0) {
+              db.run(`INSERT INTO placement_content (hero_title, hero_subtitle, content, stat_placed, stat_companies, stat_package_avg, stat_package_highest)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                ['Training & Placement Cell',
+                 'Empowering students with industry-ready skills and connecting them with top recruiters worldwide.',
+                 '<h2>About Our Placement Cell</h2><p>The Training and Placement Cell of our institution serves as a vital bridge between academia and the corporate world. We are dedicated to preparing students for the dynamic demands of the professional environment through comprehensive training programs, mock interviews, and industry interactions.</p><p>Our placement cell maintains strong relationships with leading companies across various sectors, ensuring a wide range of career opportunities for our graduating students.</p><h2>Our Training Programs</h2><p>We offer specialized training in aptitude, communication skills, technical skills, and personality development throughout the academic year. Industry experts conduct regular sessions to keep students updated with the latest trends.</p>',
+                 450, 85, '6.5 LPA', '42 LPA'
+                ], () => {});
+            }
+          });
+        });
+
+        db.run(`CREATE TABLE IF NOT EXISTS placement_companies (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          logo_url TEXT,
+          website TEXT,
+          sort_order INTEGER DEFAULT 0,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`, () => {});
 
       }
     });

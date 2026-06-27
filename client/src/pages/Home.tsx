@@ -454,11 +454,17 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
         </div>
 
         <div className="flex flex-col md:flex-row items-center gap-8 min-h-[250px]">
-          <img 
-            src={successStories[activeStoryIdx].photo} 
-            alt={successStories[activeStoryIdx].name} 
-            className="w-48 h-48 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 flex-shrink-0"
-          />
+          {successStories[activeStoryIdx].photo ? (
+            <img 
+              src={successStories[activeStoryIdx].photo} 
+              alt={successStories[activeStoryIdx].name} 
+              className="w-48 h-48 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 flex-shrink-0"
+            />
+          ) : (
+            <div className="w-48 h-48 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center flex-shrink-0">
+              <Users className="w-16 h-16 text-slate-300 dark:text-slate-700 animate-float" />
+            </div>
+          )}
           <div className="text-left space-y-4">
             <div className="text-lg italic text-slate-600 dark:text-slate-300 leading-relaxed font-light html-content"
               dangerouslySetInnerHTML={{ __html: successStories[activeStoryIdx].text }}

@@ -21,7 +21,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
   const [studentCornerOpen, setStudentCornerOpen] = useState(false);
   const [mobileStudentCornerOpen, setMobileStudentCornerOpen] = useState(false);
 
-  const aboutSubpages = [
+  const [customPages, setCustomPages] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/custom-pages')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setCustomPages(data))
+      .catch(err => console.warn('Navbar failed to fetch custom pages:', err));
+  }, [currentTab, aboutOpen, academicOpen, studentCornerOpen, mobileAboutOpen, mobileAcademicOpen, mobileStudentCornerOpen]);
+
+  const baseAboutSubpages = [
     { id: 'about_us', label: 'About Us', icon: Info, badge: 'Organisation' },
     { id: 'committee', label: 'Committee', icon: Users, badge: 'Governance' },
     { id: 'hods', label: 'From HODs/Directors Desk', icon: Home, badge: 'Leadership' },
@@ -31,14 +40,14 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
     { id: 'facilities', label: 'Facilities', icon: Building2, badge: 'Infrastructure' },
   ];
 
-  const academicSubpages = [
+  const baseAcademicSubpages = [
     { id: 'courses', label: 'Academic Courses', icon: BookOpen, badge: 'Programs' },
     { id: 'admission', label: 'Admissions Notice', icon: UserCheck, badge: 'Enrollment' },
     { id: 'syllabus', label: 'Curriculum Syllabus', icon: FileSpreadsheet, badge: 'Curriculum' },
     { id: 'academic_results', label: 'Academic Results', icon: Trophy, badge: 'Academic' },
   ];
 
-  const studentCornerSubpages = [
+  const baseStudentCornerSubpages = [
     { id: 'events', label: 'Events', icon: CalendarDays, badge: 'Activities' },
     { id: 'stories', label: 'Stories', icon: Newspaper, badge: 'Alumni' },
     { id: 'careers', label: 'Careers', icon: Briefcase, badge: 'Jobs' },
@@ -50,6 +59,25 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
     { id: 'draws', label: 'Draws', icon: FileText, badge: 'Draws' },
     { id: 'results', label: 'Results', icon: Trophy, badge: 'Results' },
   ];
+
+  const dynamicAbout = customPages
+    .filter(p => p.menu_type === 'child' && p.parent_menu === 'about' && !baseAboutSubpages.some(sp => sp.id === p.id))
+    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
+
+  const dynamicAcademic = customPages
+    .filter(p => p.menu_type === 'child' && p.parent_menu === 'academic' && !baseAcademicSubpages.some(sp => sp.id === p.id))
+    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
+
+  const dynamicStudent = customPages
+    .filter(p => p.menu_type === 'child' && p.parent_menu === 'student' && !baseStudentCornerSubpages.some(sp => sp.id === p.id))
+    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
+
+  const dynamicStandalone = customPages
+    .filter(p => p.menu_type === 'standalone');
+
+  const aboutSubpages = [...baseAboutSubpages, ...dynamicAbout];
+  const academicSubpages = [...baseAcademicSubpages, ...dynamicAcademic];
+  const studentCornerSubpages = [...baseStudentCornerSubpages, ...dynamicStudent];
 
   // Reset logo error state when logo URL changes (e.g. after admin updates it)
   useEffect(() => {
@@ -77,10 +105,17 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const navLinks = [
+  const baseNavLinks = [
     { id: 'directory', label: 'Alumni' },
+    { id: 'gallery', label: 'Gallery' },
+    { id: 'placements', label: 'Placements' },
     { id: 'donations', label: 'Donations' },
     { id: 'contact', label: 'Contact' }
+  ];
+
+  const navLinks = [
+    ...baseNavLinks,
+    ...dynamicStandalone.map(dl => ({ id: `about-${dl.id}`, label: dl.title }))
   ];
 
   const handleRoleSwitch = (role: 'student' | 'alumni' | 'admin' | null) => {
@@ -299,12 +334,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                     <div className="p-2 space-y-0.5">
                       {studentCornerSubpages.map((sub) => {
                         const SubIcon = sub.icon;
-                        const isActive = currentTab === `student-${sub.id}`;
+                        const isActive = currentTab === `student-${sub.id}` || 
+                          (sub.id === 'events' && currentTab === 'events') ||
+                          (sub.id === 'stories' && currentTab === 'stories') ||
+                          (sub.id === 'careers' && currentTab === 'jobs');
                         return (
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setCurrentTab(`student-${sub.id}`);
+                              if (sub.id === 'events') {
+                                setCurrentTab('events');
+                              } else if (sub.id === 'stories') {
+                                setCurrentTab('stories');
+                              } else if (sub.id === 'careers') {
+                                setCurrentTab('jobs');
+                              } else {
+                                setCurrentTab(`student-${sub.id}`);
+                              }
                               setStudentCornerOpen(false);
                             }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${isActive
@@ -597,12 +643,23 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                     <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
                       {studentCornerSubpages.map((sub) => {
                         const SubIcon = sub.icon;
-                        const isActive = currentTab === `student-${sub.id}`;
+                        const isActive = currentTab === `student-${sub.id}` || 
+                          (sub.id === 'events' && currentTab === 'events') ||
+                          (sub.id === 'stories' && currentTab === 'stories') ||
+                          (sub.id === 'careers' && currentTab === 'jobs');
                         return (
                           <button
                             key={sub.id}
                             onClick={() => {
-                              setCurrentTab(`student-${sub.id}`);
+                              if (sub.id === 'events') {
+                                setCurrentTab('events');
+                              } else if (sub.id === 'stories') {
+                                setCurrentTab('stories');
+                              } else if (sub.id === 'careers') {
+                                setCurrentTab('jobs');
+                              } else {
+                                setCurrentTab(`student-${sub.id}`);
+                              }
                               setIsOpen(false);
                             }}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive

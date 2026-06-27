@@ -8,7 +8,7 @@ import {
   Check, X, Sparkles, RefreshCw, Landmark, Calendar, Image,
   Newspaper, FileText, SlidersHorizontal, Trash2, Edit3, Plus, Save, Eye, Trophy,
   Users, User, AlertTriangle, CheckCircle2, Info, ShieldCheck, BookOpen, FileDown,
-  Briefcase, PlusCircle, LayoutDashboard
+  Briefcase, PlusCircle, LayoutDashboard, Building2
 } from 'lucide-react';
 
 
@@ -404,7 +404,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [aboutPageContent, setAboutPageContent] = useState('');
   const [aboutPageFileUrl, setAboutPageFileUrl] = useState<string | null>(null);
   const [aboutPageFileName, setAboutPageFileName] = useState<string | null>(null);
+  const [aboutPageParentMenu, setAboutPageParentMenu] = useState('about');
+  const [aboutPageMenuType, setAboutPageMenuType] = useState('child');
   const [aboutPageSaved, setAboutPageSaved] = useState(false);
+
+  // New Custom Page Creation State variables
+  const [isCreatingPage, setIsCreatingPage] = useState(false);
+  const [newPageId, setNewPageId] = useState('');
+  const [newPageTitle, setNewPageTitle] = useState('');
+  const [newPageContent, setNewPageContent] = useState('');
+  const [newPageParentMenu, setNewPageParentMenu] = useState('about');
+  const [newPageMenuType, setNewPageMenuType] = useState('child');
+  const [newPageFileUrl, setNewPageFileUrl] = useState<string | null>(null);
+  const [newPageFileName, setNewPageFileName] = useState<string | null>(null);
 
   // Results / Draws State
   const [allResults, setAllResults] = useState<any[]>([]);
@@ -563,6 +575,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     text: ''
   });
 
+  // Gallery State
+  const [allGallery, setAllGallery] = useState<any[]>([]);
+  const [galleryEditId, setGalleryEditId] = useState<number | null>(null);
+  const [gallerySaved, setGallerySaved] = useState(false);
+  const [galleryFilter, setGalleryFilter] = useState('All');
+  const [galleryForm, setGalleryForm] = useState({
+    title: '',
+    description: '',
+    category: 'Events',
+    image_url: '' as string,
+    photographer: '',
+    location: '',
+    date: '',
+    sort_order: 0
+  });
+
+  // Placement Manager State
+  const [placementContent, setPlacementContent] = useState<any>({
+    hero_title: 'Training & Placement Cell',
+    hero_subtitle: 'Empowering students with industry-ready skills',
+    content: '',
+    stat_placed: 0,
+    stat_companies: 0,
+    stat_package_avg: '0 LPA',
+    stat_package_highest: '0 LPA'
+  });
+  const [placementContentSaved, setPlacementContentSaved] = useState(false);
+  const [allCompanies, setAllCompanies] = useState<any[]>([]);
+  const [companyEditId, setCompanyEditId] = useState<number | null>(null);
+  const [companySaved, setCompanySaved] = useState(false);
+  const [companyForm, setCompanyForm] = useState({
+    name: '', logo_url: '' as string, website: '', sort_order: 0
+  });
+  const [placementTab, setPlacementTab] = useState<'content' | 'companies'>('content');
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -656,6 +703,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       const spotsData = spotsRes.ok ? await spotsRes.json() : [];
       setAllSpotlights(spotsData);
 
+      // Gallery list
+      const galRes = await fetch('http://localhost:5001/api/gallery');
+      const galData = galRes.ok ? await galRes.json() : [];
+      setAllGallery(galData);
+
+      // Placement data
+      const plRes = await fetch('http://localhost:5001/api/placement/content');
+      if (plRes.ok) { const plData = await plRes.json(); setPlacementContent(plData); }
+      const compRes = await fetch('http://localhost:5001/api/placement/companies');
+      if (compRes.ok) { const compData = await compRes.json(); setAllCompanies(compData); }
+
     } catch (e) {
       console.warn("Backend API not reachable for Admin Dashboard");
     }
@@ -665,6 +723,149 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Placement content save
+  const handlePlacementContentSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('http://localhost:5001/api/placement/content', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(placementContent)
+      });
+      if (res.ok) {
+        setPlacementContentSaved(true);
+        setTimeout(() => setPlacementContentSaved(false), 3000);
+      } else { alert('Failed to save placement content.'); }
+    } catch { alert('Connection failed.'); }
+  };
+
+  // Company image upload
+  const handleCompanyLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setCompanyForm(f => ({ ...f, logo_url: reader.result as string }));
+    reader.readAsDataURL(file);
+  };
+
+  // Company save
+  const handleCompanySave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!companyForm.name) { alert('Company name is required.'); return; }
+    try {
+      const url = companyEditId
+        ? `http://localhost:5001/api/placement/companies/${companyEditId}`
+        : 'http://localhost:5001/api/placement/companies';
+      const method = companyEditId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(companyForm)
+      });
+      if (res.ok) {
+        setCompanySaved(true);
+        setTimeout(() => setCompanySaved(false), 3000);
+        setCompanyEditId(null);
+        setCompanyForm({ name: '', logo_url: '', website: '', sort_order: 0 });
+        const compRes = await fetch('http://localhost:5001/api/placement/companies');
+        if (compRes.ok) setAllCompanies(await compRes.json());
+      } else { alert('Failed to save company.'); }
+    } catch { alert('Connection failed.'); }
+  };
+
+  // Company edit
+  const handleCompanyEdit = (c: any) => {
+    setCompanyEditId(c.id);
+    setCompanyForm({ name: c.name || '', logo_url: c.logo_url || '', website: c.website || '', sort_order: c.sort_order || 0 });
+  };
+
+  // Company delete
+  const handleCompanyDelete = (id: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      message: 'Delete this recruiter company? This cannot be undone.',
+      onConfirm: async () => {
+        const res = await fetch(`http://localhost:5001/api/placement/companies/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          const compRes = await fetch('http://localhost:5001/api/placement/companies');
+          if (compRes.ok) setAllCompanies(await compRes.json());
+          if (companyEditId === id) { setCompanyEditId(null); setCompanyForm({ name: '', logo_url: '', website: '', sort_order: 0 }); }
+        } else { alert('Failed to delete company.'); }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  // Gallery handlers
+  const resetGalleryForm = () => {
+    setGalleryEditId(null);
+    setGalleryForm({ title: '', description: '', category: 'Events', image_url: '', photographer: '', location: '', date: '', sort_order: 0 });
+    setGallerySaved(false);
+  };
+
+  const handleGalleryImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setGalleryForm(f => ({ ...f, image_url: reader.result as string }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleGallerySave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!galleryForm.title || !galleryForm.image_url) { alert('Title and image are required.'); return; }
+    try {
+      const url = galleryEditId ? `http://localhost:5001/api/gallery/${galleryEditId}` : 'http://localhost:5001/api/gallery';
+      const method = galleryEditId ? 'PUT' : 'POST';
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(galleryForm)
+      });
+      if (res.ok) {
+        setGallerySaved(true);
+        setTimeout(() => setGallerySaved(false), 3000);
+        resetGalleryForm();
+        const galRes = await fetch('http://localhost:5001/api/gallery');
+        const galData = galRes.ok ? await galRes.json() : [];
+        setAllGallery(galData);
+      } else {
+        const d = await res.json();
+        alert(d.error || 'Failed to save photo.');
+      }
+    } catch { alert('Connection failed.'); }
+  };
+
+  const handleGalleryEdit = (photo: any) => {
+    setGalleryEditId(photo.id);
+    setGalleryForm({
+      title: photo.title || '',
+      description: photo.description || '',
+      category: photo.category || 'Events',
+      image_url: photo.image_url || '',
+      photographer: photo.photographer || '',
+      location: photo.location || '',
+      date: photo.date || '',
+      sort_order: photo.sort_order || 0
+    });
+  };
+
+  const handleGalleryDelete = (id: number) => {
+    setConfirmDialog({
+      isOpen: true,
+      message: 'Are you sure you want to delete this photo? This action cannot be undone.',
+      onConfirm: async () => {
+        const res = await fetch(`http://localhost:5001/api/gallery/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          const galRes = await fetch('http://localhost:5001/api/gallery');
+          const galData = galRes.ok ? await galRes.json() : [];
+          setAllGallery(galData);
+          if (galleryEditId === id) resetGalleryForm();
+        } else { alert('Failed to delete photo.'); }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
 
   // Fetch page detail on selected ID change
   useEffect(() => {
@@ -677,6 +878,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
             setAboutPageContent(data.content || '');
             setAboutPageFileUrl(data.file_url || null);
             setAboutPageFileName(data.file_name || null);
+            setAboutPageParentMenu(data.parent_menu || 'about');
+            setAboutPageMenuType(data.menu_type || 'child');
           }
         })
         .catch(err => console.warn('Could not load specific custom page details:', err));
@@ -1005,7 +1208,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
           title: aboutPageTitle,
           content: aboutPageContent,
           file_url: aboutPageFileUrl,
-          file_name: aboutPageFileName
+          file_name: aboutPageFileName,
+          parent_menu: aboutPageParentMenu,
+          menu_type: aboutPageMenuType
         })
       });
       if (res.ok) {
@@ -1021,6 +1226,105 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     } catch (e) {
       alert("Connection failed.");
     }
+  };
+
+  const handleNewPageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewPageFileUrl(reader.result as string);
+      setNewPageFileName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCreatePage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPageId || !newPageTitle) {
+      alert("Page ID/Slug and Title are required.");
+      return;
+    }
+    const slugRegex = /^[a-zA-Z0-9-_]+$/;
+    if (!slugRegex.test(newPageId)) {
+      alert("Page ID/Slug can only contain alphanumeric characters, hyphens, and underscores.");
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5001/api/custom-pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newPageId,
+          title: newPageTitle,
+          content: newPageContent,
+          parent_menu: newPageParentMenu,
+          menu_type: newPageMenuType,
+          file_url: newPageFileUrl,
+          file_name: newPageFileName
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Custom page created successfully!");
+        setNewPageId('');
+        setNewPageTitle('');
+        setNewPageContent('');
+        setNewPageParentMenu('about');
+        setNewPageMenuType('child');
+        setNewPageFileUrl(null);
+        setNewPageFileName(null);
+        setIsCreatingPage(false);
+
+        // Refresh dynamic page listing
+        const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+        const cpData = await cpRes.json();
+        if (cpRes.ok) {
+          setAllAboutPages(cpData);
+          setSelectedAboutPageId(newPageId); // switch to the new page
+        }
+      } else {
+        alert(data.error || "Failed to create new page.");
+      }
+    } catch (err) {
+      alert("Connection failed.");
+    }
+  };
+
+  const handleDeletePage = (pageId: string) => {
+    const isBasePage = ['about_us', 'committee', 'director', 'circulars', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results'].includes(pageId);
+    if (isBasePage) {
+      alert("This is a system default page and cannot be deleted.");
+      return;
+    }
+
+    setConfirmDialog({
+      isOpen: true,
+      message: `Are you sure you want to delete the custom page "${pageId}"? This action cannot be undone.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`http://localhost:5001/api/custom-pages/${pageId}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            // Refresh pages
+            const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+            const cpData = await cpRes.json();
+            if (cpRes.ok) {
+              setAllAboutPages(cpData);
+              setSelectedAboutPageId('about_us');
+            }
+          } else {
+            alert("Failed to delete page.");
+          }
+        } catch (err) {
+          alert("Connection failed.");
+        }
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+      }
+    });
   };
 
   // ── Slider Handlers ──────────────────────────────────────────────────────
@@ -2212,91 +2516,297 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
               <FileText className="w-6 h-6 text-primary" /> Manage About Subpages
             </h2>
             <p className="text-sm text-slate-500">
-              Update description text and attach PDFs/official documents for all physical education and sports committee subpages.
+              Create new custom pages, update description text, configure navbar menu placement, and attach PDF/official documents.
             </p>
+
+            {/* Tab switch between Edit and Create */}
+            <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
+              <button
+                type="button"
+                onClick={() => setIsCreatingPage(false)}
+                className={`px-4 py-2 text-sm font-extrabold transition-all border-b-2 ${
+                  !isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
+                }`}
+              >
+                Edit Existing Page
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsCreatingPage(true)}
+                className={`px-4 py-2 text-sm font-extrabold transition-all border-b-2 ${
+                  isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
+                }`}
+              >
+                Create New Page
+              </button>
+            </div>
+
             {aboutPageSaved && (
               <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">
                 Subpage changes saved successfully! Content updated dynamically.
               </div>
             )}
-            <form onSubmit={handleSaveAboutPage} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Subpage to Edit</label>
-                  <select
-                    value={selectedAboutPageId}
-                    onChange={(e) => setSelectedAboutPageId(e.target.value)}
-                    className="glass-input text-slate-500 font-semibold"
-                  >
-                    <option value="about_us">About Us Page</option>
-                    <option value="committee">PCZSC Committee Page</option>
-                    <option value="director">Director of Phy. Edu. Page</option>
-                    <option value="circulars">Circulars Page</option>
-                    <option value="ncte">NCTE Mandatory Disclosures Page</option>
-                    <option value="courses">Courses Page</option>
-                    <option value="admission">Admission Page</option>
-                    <option value="syllabus">Syllabus Page</option>
-                    <option value="academic_results">Academic Results Page</option>
-                    <option value="souvenirs">Souvenirs Page</option>
-                    <option value="calendar">Sports Calendar Page</option>
-                    <option value="results">Draws & Results Page</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={aboutPageTitle}
-                    onChange={(e) => setAboutPageTitle(e.target.value)}
-                    placeholder="Page Title"
-                    className="glass-input font-bold"
-                  />
-                </div>
-              </div>
-              <div className="flex flex-col gap-1.5 text-left">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
-                <RichTextEditor
-                  value={aboutPageContent}
-                  onChange={(html) => setAboutPageContent(html)}
-                  placeholder="Enter detailed description, headings, lists, links, pictures, and formatted text for this subpage..."
-                  editKey={selectedAboutPageId}
-                />
-              </div>
-              <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="space-y-1 text-left">
-                    <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
-                    <p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p>
+
+            {/* 1. EDIT EXISTING PAGE FORM */}
+            {!isCreatingPage && (
+              <form onSubmit={handleSaveAboutPage} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Subpage to Edit</label>
+                    <select
+                      value={selectedAboutPageId}
+                      onChange={(e) => setSelectedAboutPageId(e.target.value)}
+                      className="glass-input text-slate-500 font-semibold"
+                    >
+                      {allAboutPages.map(p => (
+                        <option key={p.id} value={p.id}>{p.title} (slug: {p.id})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title</label>
                     <input
-                      type="file"
-                      accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                      onChange={handleFileUpload}
-                      className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                      type="text"
+                      required
+                      value={aboutPageTitle}
+                      onChange={(e) => setAboutPageTitle(e.target.value)}
+                      placeholder="Page Title"
+                      className="glass-input font-bold"
                     />
                   </div>
-                  {aboutPageFileName && (
-                    <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
-                      <FileText className="w-4 h-4 text-primary shrink-0" />
-                      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{aboutPageFileName}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAboutPageFileUrl(null);
-                          setAboutPageFileName(null);
-                        }}
-                        className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navbar Parent Menu</label>
+                    <select
+                      value={aboutPageParentMenu}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setAboutPageParentMenu(val);
+                        if (val === 'none') {
+                          setAboutPageMenuType('standalone');
+                        } else {
+                          setAboutPageMenuType('child');
+                        }
+                      }}
+                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold"
+                    >
+                      <option value="about">About Dropdown</option>
+                      <option value="academic">Academic Dropdown</option>
+                      <option value="student">Student Corner Dropdown</option>
+                      <option value="none">None (Standalone Link)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Item Type</label>
+                    <select
+                      value={aboutPageMenuType}
+                      onChange={(e) => setAboutPageMenuType(e.target.value)}
+                      disabled={aboutPageParentMenu === 'none'}
+                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-50"
+                    >
+                      <option value="child">Child Tab (Under selected dropdown)</option>
+                      <option value="standalone">New Standalone Menu Link</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
+                  <RichTextEditor
+                    value={aboutPageContent}
+                    onChange={(html) => setAboutPageContent(html)}
+                    placeholder="Enter detailed description, headings, lists, links, pictures, and formatted text for this subpage..."
+                    editKey={selectedAboutPageId}
+                  />
+                </div>
+
+                <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1 text-left">
+                      <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
+                      <p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                        onChange={handleFileUpload}
+                        className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                      />
+                    </div>
+                    {aboutPageFileName && (
+                      <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
+                        <FileText className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{aboutPageFileName}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAboutPageFileUrl(null);
+                            setAboutPageFileName(null);
+                          }}
+                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
+                  Save Subpage Changes
+                </button>
+              </form>
+            )}
+
+            {/* 2. CREATE NEW PAGE FORM */}
+            {isCreatingPage && (
+              <form onSubmit={handleCreatePage} className="space-y-4 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-1.5 sm:col-span-1">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page ID / Slug *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newPageId}
+                      onChange={(e) => setNewPageId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                      placeholder="e.g. dynamic-sports-rules"
+                      className="glass-input font-bold"
+                    />
+                    <p className="text-[9px] text-slate-400 mt-0.5">Use lowercase, hyphens, and underscores.</p>
+                  </div>
+                  <div className="flex flex-col gap-1.5 sm:col-span-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newPageTitle}
+                      onChange={(e) => setNewPageTitle(e.target.value)}
+                      placeholder="e.g. Sports Rules &amp; Guidelines"
+                      className="glass-input font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navbar Parent Menu</label>
+                    <select
+                      value={newPageParentMenu}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewPageParentMenu(val);
+                        if (val === 'none') {
+                          setNewPageMenuType('standalone');
+                        } else {
+                          setNewPageMenuType('child');
+                        }
+                      }}
+                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold"
+                    >
+                      <option value="about">About Dropdown</option>
+                      <option value="academic">Academic Dropdown</option>
+                      <option value="student">Student Corner Dropdown</option>
+                      <option value="none">None (Standalone Link)</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Item Type</label>
+                    <select
+                      value={newPageMenuType}
+                      onChange={(e) => setNewPageMenuType(e.target.value)}
+                      disabled={newPageParentMenu === 'none'}
+                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-50"
+                    >
+                      <option value="child">Child Tab (Under selected dropdown)</option>
+                      <option value="standalone">New Standalone Menu Link</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
+                  <RichTextEditor
+                    value={newPageContent}
+                    onChange={(html) => setNewPageContent(html)}
+                    placeholder="Enter description, lists, formatted text, and headings using editor..."
+                    editKey="create-new-page"
+                  />
+                </div>
+
+                <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="space-y-1 text-left">
+                      <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
+                      <p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                        onChange={handleNewPageFileUpload}
+                        className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                      />
+                    </div>
+                    {newPageFileName && (
+                      <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
+                        <FileText className="w-4 h-4 text-primary shrink-0" />
+                        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{newPageFileName}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewPageFileUrl(null);
+                            setNewPageFileName(null);
+                          }}
+                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
+                  Create Custom Page
+                </button>
+              </form>
+            )}
+
+            {/* 3. LIST OF ALL PAGES WITH DELETION FACILITY */}
+            <div className="border-t border-slate-200 dark:border-slate-800 my-6 pt-6">
+              <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Page Catalog &amp; Deletion Center</h3>
+              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+                {allAboutPages.map((page) => {
+                  const isBasePage = ['about_us', 'committee', 'director', 'circulars', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results'].includes(page.id);
+                  return (
+                    <div key={page.id} className="group flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
+                          <FileText className="w-4 h-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs text-slate-800 dark:text-white leading-normal">
+                            {page.title} {isBasePage && <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold px-1.5 py-0.5 rounded ml-1">System Base</span>}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+                            Slug: {page.id} · Type: {page.menu_type || 'child'} · Placement: {page.parent_menu || 'about'}
+                          </p>
+                        </div>
+                      </div>
+                      {!isBasePage ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeletePage(page.id)}
+                          className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                          title="Delete Custom Page"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 font-bold opacity-30 select-none mr-2">Locked</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
-                Save Subpage Changes
-              </button>
-            </form>
+            </div>
           </div>
         )}
 
@@ -3085,6 +3595,474 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* 🖼️ GALLERY MANAGER TAB */}
+        {activeSubTab === 'gallery-manager' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <Image className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800 dark:text-white">Photo Gallery Manager</h2>
+                    <p className="text-xs text-slate-400 font-medium">{allGallery.length} photos across all categories</p>
+                  </div>
+                </div>
+                {gallerySaved && (
+                  <div className="flex items-center gap-1.5 text-emerald-600 text-sm font-bold bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl">
+                    <Check className="w-4 h-4" /> Photo saved successfully!
+                  </div>
+                )}
+              </div>
+
+              {/* Add / Edit Form */}
+              <form onSubmit={handleGallerySave} className="space-y-5 border border-slate-200/60 dark:border-slate-700/40 rounded-2xl p-5 bg-slate-50/60 dark:bg-slate-800/20">
+                <h3 className="font-extrabold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                  <Plus className="w-4 h-4 text-primary" />
+                  {galleryEditId ? '✏️ Edit Photo' : '📤 Upload New Photo'}
+                </h3>
+
+                {/* Image upload + preview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-1">
+                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-2 uppercase tracking-wider">Photo *</label>
+                    {galleryForm.image_url ? (
+                      <div className="relative group rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 aspect-square bg-slate-100">
+                        <img src={galleryForm.image_url} alt="Preview" className="w-full h-full object-cover" onError={() => setGalleryForm(f => ({ ...f, image_url: '' }))} />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-all gap-2">
+                          <label className="cursor-pointer text-white text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg transition-all">
+                            Change
+                            <input type="file" accept="image/*" className="hidden" onChange={handleGalleryImageUpload} />
+                          </label>
+                          <button type="button" onClick={() => setGalleryForm(f => ({ ...f, image_url: '' }))} className="text-white text-xs font-bold bg-rose-500/70 hover:bg-rose-500 px-3 py-1.5 rounded-lg transition-all">Remove</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group">
+                        <Image className="w-10 h-10 text-slate-300 dark:text-slate-600 group-hover:text-primary/50 transition-colors mb-2" />
+                        <span className="text-xs font-bold text-slate-400 group-hover:text-primary transition-colors">Click to upload</span>
+                        <span className="text-[10px] text-slate-300 mt-0.5">JPG, PNG, WebP</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={handleGalleryImageUpload} />
+                      </label>
+                    )}
+                    <div className="mt-2">
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">— or paste URL —</label>
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={galleryForm.image_url.startsWith('data:') ? '' : galleryForm.image_url}
+                        onChange={e => setGalleryForm(f => ({ ...f, image_url: e.target.value }))}
+                        className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="md:col-span-2 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Title *</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="Photo title..."
+                          value={galleryForm.title}
+                          onChange={e => setGalleryForm(f => ({ ...f, title: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Category *</label>
+                        <select
+                          value={galleryForm.category}
+                          onChange={e => setGalleryForm(f => ({ ...f, category: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        >
+                          {['Events', 'Sports', 'Cultural', 'Campus', 'Academic', 'Alumni', 'Infrastructure', 'General'].map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Description</label>
+                      <textarea
+                        rows={3}
+                        placeholder="Brief description of the photo..."
+                        value={galleryForm.description}
+                        onChange={e => setGalleryForm(f => ({ ...f, description: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Photographer</label>
+                        <input
+                          type="text"
+                          placeholder="Name..."
+                          value={galleryForm.photographer}
+                          onChange={e => setGalleryForm(f => ({ ...f, photographer: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Location</label>
+                        <input
+                          type="text"
+                          placeholder="Venue / place..."
+                          value={galleryForm.location}
+                          onChange={e => setGalleryForm(f => ({ ...f, location: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Date</label>
+                        <input
+                          type="date"
+                          value={galleryForm.date}
+                          onChange={e => setGalleryForm(f => ({ ...f, date: e.target.value }))}
+                          className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex items-center gap-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/40">
+                  <button type="submit" className="btn-primary text-xs font-bold py-2.5 px-6 justify-center gap-1.5 cursor-pointer flex items-center">
+                    <Save className="w-4 h-4" />
+                    {galleryEditId ? 'Save Changes' : 'Upload Photo'}
+                  </button>
+                  {galleryEditId && (
+                    <button type="button" onClick={resetGalleryForm} className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 hover:text-rose-500 hover:border-rose-300 transition-all flex items-center gap-1.5">
+                      <X className="w-4 h-4" /> Cancel Edit
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Gallery Grid */}
+            <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-6">
+              {/* Filter Tabs */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className="font-black text-slate-700 dark:text-slate-300 text-base flex items-center gap-2">
+                  <Image className="w-4 h-4 text-primary" /> All Photos ({allGallery.length})
+                </h3>
+                <div className="flex gap-2 flex-wrap">
+                  {['All', 'Events', 'Sports', 'Cultural', 'Campus', 'Academic', 'Alumni', 'Infrastructure', 'General'].map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setGalleryFilter(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                        galleryFilter === cat
+                          ? 'bg-primary text-white border-primary shadow-md'
+                          : 'border-slate-200 dark:border-slate-700 text-slate-500 hover:border-primary hover:text-primary'
+                      }`}
+                    >
+                      {cat}
+                      {cat !== 'All' && <span className="ml-1 opacity-60">({allGallery.filter(p => p.category === cat).length})</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Photos Grid */}
+              {(galleryFilter === 'All' ? allGallery : allGallery.filter(p => p.category === galleryFilter)).length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                    <Image className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                  </div>
+                  <p className="text-slate-400 text-sm font-medium">No photos in this category yet.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                  {(galleryFilter === 'All' ? allGallery : allGallery.filter(p => p.category === galleryFilter)).map((photo: any) => (
+                    <div key={photo.id} className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-200 cursor-pointer ${galleryEditId === photo.id ? 'border-primary shadow-lg shadow-primary/20' : 'border-slate-200/50 dark:border-slate-700/40 hover:border-primary/40'}`}>
+                      <div className="aspect-square bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                        {photo.image_url ? (
+                          <img src={photo.image_url} alt={photo.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center"><Image className="w-8 h-8 text-slate-300" /></div>
+                        )}
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-200 flex flex-col justify-end p-2.5">
+                        <p className="text-white text-[10px] font-bold line-clamp-2 leading-tight mb-2">{photo.title}</p>
+                        <span className="inline-block text-[8px] font-extrabold uppercase tracking-wider bg-primary/80 text-white px-1.5 py-0.5 rounded-full mb-2 w-fit">{photo.category}</span>
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => handleGalleryEdit(photo)}
+                            className="flex-1 flex items-center justify-center gap-1 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-[10px] font-bold transition-all"
+                          >
+                            <Edit3 className="w-3 h-3" /> Edit
+                          </button>
+                          <button
+                            onClick={() => handleGalleryDelete(photo.id)}
+                            className="flex items-center justify-center p-1 rounded-lg bg-rose-500/70 hover:bg-rose-500 text-white transition-all"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      {galleryEditId === photo.id && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                          <Edit3 className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 🎓 PLACEMENT MANAGER TAB */}
+        {activeSubTab === 'placement-manager' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-5">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-secondary))' }}>
+                  <Briefcase className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-white">Placement Manager</h2>
+                  <p className="text-xs text-slate-400 font-medium">Manage placement page content and recruiter logos</p>
+                </div>
+              </div>
+
+              {/* Inner sub-tabs */}
+              <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-fit">
+                {(['content', 'companies'] as const).map(tab => (
+                  <button key={tab} onClick={() => setPlacementTab(tab)}
+                    className={`px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all ${placementTab === tab ? 'bg-primary text-white shadow' : 'text-slate-500 hover:text-primary'}`}>
+                    {tab === 'content' ? '📝 Page Content' : '🏢 Recruiters'}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Content Editor Tab ── */}
+            {placementTab === 'content' && (
+              <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-extrabold text-slate-700 dark:text-slate-300 text-sm uppercase tracking-widest flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" /> Placement Page Content
+                  </h3>
+                  {placementContentSaved && (
+                    <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-xl">
+                      <Check className="w-3.5 h-3.5" /> Saved successfully!
+                    </span>
+                  )}
+                </div>
+
+                <form onSubmit={handlePlacementContentSave} className="space-y-5">
+                  {/* Hero fields */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Hero Title</label>
+                      <input type="text" value={placementContent.hero_title}
+                        onChange={e => setPlacementContent((p: any) => ({ ...p, hero_title: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Hero Subtitle</label>
+                      <input type="text" value={placementContent.hero_subtitle}
+                        onChange={e => setPlacementContent((p: any) => ({ ...p, hero_subtitle: e.target.value }))}
+                        className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="border border-slate-200/60 dark:border-slate-700/40 rounded-2xl p-4 bg-slate-50/60 dark:bg-slate-800/20">
+                    <p className="text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-3 flex items-center gap-2"><BarChart3 className="w-3.5 h-3.5 text-primary" /> Placement Statistics</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {[
+                        { label: 'Students Placed', key: 'stat_placed', type: 'number' },
+                        { label: 'Companies', key: 'stat_companies', type: 'number' },
+                        { label: 'Avg Package', key: 'stat_package_avg', type: 'text' },
+                        { label: 'Highest Package', key: 'stat_package_highest', type: 'text' },
+                      ].map(field => (
+                        <div key={field.key}>
+                          <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{field.label}</label>
+                          <input type={field.type} value={(placementContent as any)[field.key]}
+                            onChange={e => setPlacementContent((p: any) => ({ ...p, [field.key]: e.target.value }))}
+                            placeholder={field.type === 'text' ? 'e.g. 12 LPA' : '0'}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Rich text content */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Page Content (Rich Text)</label>
+                    <RichTextEditor
+                      value={placementContent.content}
+                      onChange={(val: string) => setPlacementContent((p: any) => ({ ...p, content: val }))}
+                    />
+                  </div>
+
+                  <button type="submit" className="btn-primary text-xs font-bold py-2.5 px-8 justify-center gap-1.5 cursor-pointer flex items-center">
+                    <Save className="w-4 h-4" /> Save Placement Content
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* ── Recruiters/Companies Tab ── */}
+            {placementTab === 'companies' && (
+              <div className="space-y-5">
+                {/* Add / Edit Company Form */}
+                <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-extrabold text-sm text-slate-700 dark:text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                      <Plus className="w-4 h-4 text-primary" />
+                      {companyEditId ? '✏️ Edit Recruiter' : '➕ Add Recruiter Company'}
+                    </h3>
+                    {companySaved && (
+                      <span className="flex items-center gap-1.5 text-emerald-600 text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-xl">
+                        <Check className="w-3.5 h-3.5" /> Saved!
+                      </span>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleCompanySave} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Logo upload & preview */}
+                      <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Company Logo</label>
+                        {companyForm.logo_url ? (
+                          <div className="relative group aspect-video rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-white">
+                            <img src={companyForm.logo_url} alt="logo" className="w-full h-full object-contain p-3"
+                              onError={() => setCompanyForm(f => ({ ...f, logo_url: '' }))} />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-all">
+                              <label className="cursor-pointer text-white text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg">
+                                Change <input type="file" accept="image/*" className="hidden" onChange={handleCompanyLogoUpload} />
+                              </label>
+                              <button type="button" onClick={() => setCompanyForm(f => ({ ...f, logo_url: '' }))} className="text-white text-xs font-bold bg-rose-500/70 hover:bg-rose-500 px-3 py-1.5 rounded-lg">Remove</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <label className="flex flex-col items-center justify-center aspect-video rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all group bg-slate-50 dark:bg-slate-900">
+                            <Building2 className="w-8 h-8 text-slate-300 group-hover:text-primary/50 transition-colors mb-1" />
+                            <span className="text-xs font-bold text-slate-400 group-hover:text-primary">Upload Logo</span>
+                            <span className="text-[10px] text-slate-300 mt-0.5">PNG, SVG, JPG</span>
+                            <input type="file" accept="image/*" className="hidden" onChange={handleCompanyLogoUpload} />
+                          </label>
+                        )}
+                        <div className="mt-2">
+                          <label className="block text-[10px] font-bold text-slate-400 mb-1">— or paste logo URL —</label>
+                          <input type="url" placeholder="https://..."
+                            value={companyForm.logo_url.startsWith('data:') ? '' : companyForm.logo_url}
+                            onChange={e => setCompanyForm(f => ({ ...f, logo_url: e.target.value }))}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                      </div>
+
+                      {/* Name, website, sort */}
+                      <div className="md:col-span-2 space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Company Name *</label>
+                          <input required type="text" placeholder="e.g. TCS, Infosys..."
+                            value={companyForm.name}
+                            onChange={e => setCompanyForm(f => ({ ...f, name: e.target.value }))}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Company Website</label>
+                          <input type="url" placeholder="https://company.com"
+                            value={companyForm.website}
+                            onChange={e => setCompanyForm(f => ({ ...f, website: e.target.value }))}
+                            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Sort Order</label>
+                          <input type="number" placeholder="0" value={companyForm.sort_order}
+                            onChange={e => setCompanyForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
+                            className="w-32 px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/30" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2 border-t border-slate-200/60 dark:border-slate-700/40">
+                      <button type="submit" className="btn-primary text-xs font-bold py-2.5 px-6 justify-center gap-1.5 cursor-pointer flex items-center">
+                        <Save className="w-4 h-4" /> {companyEditId ? 'Save Changes' : 'Add Company'}
+                      </button>
+                      {companyEditId && (
+                        <button type="button" onClick={() => { setCompanyEditId(null); setCompanyForm({ name: '', logo_url: '', website: '', sort_order: 0 }); }}
+                          className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 hover:text-rose-500 hover:border-rose-300 transition-all flex items-center gap-1.5">
+                          <X className="w-4 h-4" /> Cancel
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                {/* Companies Grid */}
+                <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 p-6">
+                  <h3 className="font-black text-slate-700 dark:text-slate-300 text-sm uppercase tracking-widest mb-5 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-primary" /> Recruiter Companies ({allCompanies.length})
+                  </h3>
+
+                  {allCompanies.length === 0 ? (
+                    <div className="flex flex-col items-center py-12 gap-3 text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                        <Building2 className="w-7 h-7 text-slate-300" />
+                      </div>
+                      <p className="text-slate-400 text-sm font-medium">No recruiter companies added yet.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {allCompanies.map((company: any) => (
+                        <div key={company.id}
+                          className={`group relative rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-white dark:bg-slate-800 ${companyEditId === company.id ? 'border-primary shadow-lg shadow-primary/15' : 'border-slate-100 dark:border-slate-700 hover:border-primary/30'}`}>
+                          {/* Logo */}
+                          <div className="aspect-video flex items-center justify-center p-3 bg-white dark:bg-slate-900">
+                            {company.logo_url ? (
+                              <img src={company.logo_url} alt={company.name} className="max-w-full max-h-full object-contain"
+                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                            ) : (
+                              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
+                                <span className="text-white font-black text-sm">{company.name.slice(0, 2).toUpperCase()}</span>
+                              </div>
+                            )}
+                          </div>
+                          {/* Name & actions */}
+                          <div className="p-2.5 border-t border-slate-100 dark:border-slate-700">
+                            <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate text-center mb-2">{company.name}</p>
+                            <div className="flex gap-1.5">
+                              <button onClick={() => handleCompanyEdit(company)}
+                                className="flex-1 flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-bold bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                                <Edit3 className="w-3 h-3" /> Edit
+                              </button>
+                              <button onClick={() => handleCompanyDelete(company.id)}
+                                className="flex items-center justify-center p-1 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all">
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          {companyEditId === company.id && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow">
+                              <Edit3 className="w-2.5 h-2.5 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

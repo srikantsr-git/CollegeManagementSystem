@@ -3,7 +3,7 @@ import {
   User, Users, Briefcase, Award, Heart, ClipboardCheck, 
   Settings, BarChart3, GraduationCap, Calendar, PlusSquare,
   Newspaper, FileText, SlidersHorizontal, Trophy, CreditCard,
-  ShieldCheck, BookOpen, UserCheck, Sparkles, LayoutDashboard
+  ShieldCheck, BookOpen, UserCheck, Sparkles, LayoutDashboard, Image
 } from 'lucide-react';
 
 export interface NavigationItem {
@@ -50,6 +50,8 @@ export const adminItems: NavigationItem[] = [
   { id: 'admission-manager', label: 'Manage Admissions', description: 'Manage admission announcements and eligibility details', icon: UserCheck },
   { id: 'jobs', label: 'Post / Apply Jobs', description: 'Moderate and review posted career opportunities', icon: Briefcase },
   { id: 'spotlight-manager', label: 'Manage Spotlight', description: 'Highlight success stories of distinguished alumni', icon: Sparkles },
+  { id: 'gallery-manager', label: 'Photo Gallery', description: 'Upload and manage the photo gallery with categories', icon: Image },
+  { id: 'placement-manager', label: 'Placement Manager', description: 'Manage placement page content and recruiter company logos', icon: Briefcase },
   { id: 'slider-manager', label: 'Hero Slider', description: 'Update home page hero slider slides and images', icon: SlidersHorizontal },
   { id: 'donations-manager', label: 'Donations Tracker', description: 'Track and audit donor contributions and campaigns', icon: Heart },
   { id: 'branding', label: 'Branding Settings', description: 'Customize logos, college name, and theme presets', icon: Settings },

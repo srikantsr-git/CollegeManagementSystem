@@ -665,7 +665,7 @@ app.delete('/api/news/:id', async (req, res) => {
 // --- CUSTOM PAGES API ---
 app.get('/api/custom-pages', async (req, res) => {
   try {
-    const pages = await query.all('SELECT id, title, updated_at FROM custom_pages ORDER BY title ASC');
+    const pages = await query.all('SELECT id, title, parent_menu, menu_type, updated_at FROM custom_pages ORDER BY title ASC');
     res.json(pages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -684,16 +684,50 @@ app.get('/api/custom-pages/:id', async (req, res) => {
   }
 });
 
+app.post('/api/custom-pages', async (req, res) => {
+  const { id, title, content, file_url, file_name, parent_menu, menu_type } = req.body;
+  if (!id || !title) {
+    return res.status(400).json({ error: 'Page ID and Title are required' });
+  }
+  const slugRegex = /^[a-zA-Z0-9-_]+$/;
+  if (!slugRegex.test(id)) {
+    return res.status(400).json({ error: 'Page ID/Slug can only contain alphanumeric characters, hyphens, and underscores' });
+  }
+  try {
+    const existing = await query.get('SELECT id FROM custom_pages WHERE id = ?', [id]);
+    if (existing) {
+      return res.status(400).json({ error: 'A page with this ID/Slug already exists' });
+    }
+    await query.run(
+      `INSERT INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [id, title, content || '', file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child']
+    );
+    res.json({ success: true, message: 'Page created successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.put('/api/custom-pages/:id', async (req, res) => {
-  const { title, content, file_url, file_name } = req.body;
+  const { title, content, file_url, file_name, parent_menu, menu_type } = req.body;
   try {
     await query.run(
       `UPDATE custom_pages 
-       SET title = ?, content = ?, file_url = ?, file_name = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, file_url = ?, file_name = ?, parent_menu = ?, menu_type = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [title, content, file_url || null, file_name || null, req.params.id]
+      [title, content, file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', req.params.id]
     );
     res.json({ success: true, message: 'Page updated successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/custom-pages/:id', async (req, res) => {
+  try {
+    await query.run('DELETE FROM custom_pages WHERE id = ?', [req.params.id]);
+    res.json({ success: true, message: 'Page deleted successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -1398,6 +1432,165 @@ app.put('/api/admission-files/:id', async (req, res) => {
 app.delete('/api/admission-files/:id', async (req, res) => {
   try {
     await query.run('DELETE FROM admission_files WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- GALLERY API ---
+app.get('/api/gallery', async (req, res) => {
+  try {
+    const { category } = req.query;
+    let rows;
+    if (category && category !== 'All') {
+      rows = await query.all('SELECT * FROM gallery WHERE category = ? ORDER BY sort_order ASC, created_at DESC', [category]);
+    } else {
+      rows = await query.all('SELECT * FROM gallery ORDER BY sort_order ASC, created_at DESC');
+    }
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/gallery/categories', async (req, res) => {
+  try {
+    const rows = await query.all('SELECT DISTINCT category FROM gallery ORDER BY category ASC');
+    res.json(rows.map(r => r.category));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/gallery/:id', async (req, res) => {
+  try {
+    const row = await query.get('SELECT * FROM gallery WHERE id = ?', [req.params.id]);
+    if (!row) return res.status(404).json({ error: 'Not found' });
+    res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/gallery', async (req, res) => {
+  const { title, description, category, image_url, photographer, location, date, sort_order } = req.body;
+  if (!title || !image_url) return res.status(400).json({ error: 'Title and image are required' });
+  try {
+    const result = await query.run(
+      `INSERT INTO gallery (title, description, category, image_url, photographer, location, date, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || '', category || 'General', image_url, photographer || '', location || '', date || '', parseInt(sort_order) || 0]
+    );
+    res.json({ success: true, id: result.lastID });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/gallery/:id', async (req, res) => {
+  const { title, description, category, image_url, photographer, location, date, sort_order } = req.body;
+  try {
+    await query.run(
+      `UPDATE gallery SET title=?, description=?, category=?, image_url=?, photographer=?, location=?, date=?, sort_order=? WHERE id=?`,
+      [title, description || '', category || 'General', image_url, photographer || '', location || '', date || '', parseInt(sort_order) || 0, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/gallery/:id', async (req, res) => {
+  try {
+    await query.run('DELETE FROM gallery WHERE id = ?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- PLACEMENT API ---
+// Get placement page content
+app.get('/api/placement/content', async (req, res) => {
+  try {
+    let row = await query.get('SELECT * FROM placement_content WHERE id = 1');
+    if (!row) {
+      await query.run(`INSERT INTO placement_content (hero_title, hero_subtitle, content, stat_placed, stat_companies, stat_package_avg, stat_package_highest)
+        VALUES (?,?,?,?,?,?,?)`,
+        ['Training & Placement Cell', 'Building careers, Shaping futures', '', 0, 0, '0 LPA', '0 LPA']);
+      row = await query.get('SELECT * FROM placement_content WHERE id = 1');
+    }
+    res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update placement page content
+app.put('/api/placement/content', async (req, res) => {
+  const { hero_title, hero_subtitle, content, stat_placed, stat_companies, stat_package_avg, stat_package_highest } = req.body;
+  try {
+    const existing = await query.get('SELECT id FROM placement_content WHERE id = 1');
+    if (existing) {
+      await query.run(
+        `UPDATE placement_content SET hero_title=?, hero_subtitle=?, content=?, stat_placed=?, stat_companies=?, stat_package_avg=?, stat_package_highest=?, updated_at=CURRENT_TIMESTAMP WHERE id=1`,
+        [hero_title, hero_subtitle, content, parseInt(stat_placed)||0, parseInt(stat_companies)||0, stat_package_avg, stat_package_highest]
+      );
+    } else {
+      await query.run(
+        `INSERT INTO placement_content (id, hero_title, hero_subtitle, content, stat_placed, stat_companies, stat_package_avg, stat_package_highest) VALUES (1,?,?,?,?,?,?,?)`,
+        [hero_title, hero_subtitle, content, parseInt(stat_placed)||0, parseInt(stat_companies)||0, stat_package_avg, stat_package_highest]
+      );
+    }
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get all placement companies
+app.get('/api/placement/companies', async (req, res) => {
+  try {
+    const rows = await query.all('SELECT * FROM placement_companies ORDER BY sort_order ASC, created_at DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add placement company
+app.post('/api/placement/companies', async (req, res) => {
+  const { name, logo_url, website, sort_order } = req.body;
+  if (!name) return res.status(400).json({ error: 'Company name is required' });
+  try {
+    const result = await query.run(
+      `INSERT INTO placement_companies (name, logo_url, website, sort_order) VALUES (?,?,?,?)`,
+      [name, logo_url || '', website || '', parseInt(sort_order)||0]
+    );
+    res.json({ success: true, id: result.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Update placement company
+app.put('/api/placement/companies/:id', async (req, res) => {
+  const { name, logo_url, website, sort_order } = req.body;
+  try {
+    await query.run(
+      `UPDATE placement_companies SET name=?, logo_url=?, website=?, sort_order=? WHERE id=?`,
+      [name, logo_url || '', website || '', parseInt(sort_order)||0, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete placement company
+app.delete('/api/placement/companies/:id', async (req, res) => {
+  try {
+    await query.run('DELETE FROM placement_companies WHERE id=?', [req.params.id]);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
