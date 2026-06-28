@@ -32,6 +32,15 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
   const [company, setCompany] = useState('');
   const [designation, setDesignation] = useState('');
   const [industry, setIndustry] = useState('');
+
+  // Additional profile uploader and details states
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [resumeUrl, setResumeUrl] = useState('');
+  const [resumeName, setResumeName] = useState('');
+  const [interests, setInterests] = useState('');
+  const [linkedin, setLinkedin] = useState('');
+  const [skills, setSkills] = useState('');
+  const [achievements, setAchievements] = useState('');
   
   const [successRegister, setSuccessRegister] = useState(false);
 
@@ -42,6 +51,13 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
     setOtpRequired(false);
     setOtpValue('');
     setSuccessRegister(false);
+    setPhotoUrl(null);
+    setResumeUrl('');
+    setResumeName('');
+    setInterests('');
+    setLinkedin('');
+    setSkills('');
+    setAchievements('');
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -98,12 +114,20 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
       roll_number: rollNum,
       company,
       designation,
-      industry
+      industry,
+      photo_url: photoUrl,
+      linkedin,
+      skills,
+      achievements
     } : {
       grad_year: parseInt(gradYear),
       degree,
       department: dept,
       roll_number: rollNum,
+      photo_url: photoUrl,
+      resume_url: resumeUrl,
+      resume_name: resumeName,
+      interests
     };
 
     try {
@@ -526,6 +550,119 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
                         className="glass-input py-2 px-3 text-xs"
                       />
                     </div>
+                  </div>
+                </>
+              )}
+
+              {/* Additional profile fields for Alumni */}
+              {regRole === 'alumni' && (
+                <>
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2"></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profile Photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setPhotoUrl(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="glass-input py-1.5 px-3 text-[10px] file:mr-2 file:py-0.5 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-primary/10 file:text-primary cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LinkedIn URL</label>
+                      <input
+                        type="text"
+                        value={linkedin}
+                        onChange={e => setLinkedin(e.target.value)}
+                        placeholder="linkedin.com/in/..."
+                        className="glass-input py-2 px-3 text-xs"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skills (Comma-separated)</label>
+                    <input
+                      type="text"
+                      value={skills}
+                      onChange={e => setSkills(e.target.value)}
+                      placeholder="React, SQL, Project Management"
+                      className="glass-input py-2 px-3 text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Professional Achievements</label>
+                    <textarea
+                      value={achievements}
+                      onChange={e => setAchievements(e.target.value)}
+                      placeholder="List key awards, honors, or certificates..."
+                      className="glass-input py-2 px-3 text-xs h-16 resize-none"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Additional profile fields for Student */}
+              {regRole === 'student' && (
+                <>
+                  <div className="border-t border-slate-100 dark:border-slate-800 my-2 pt-2"></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Profile Photo</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setPhotoUrl(reader.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="glass-input py-1.5 px-3 text-[10px] file:mr-2 file:py-0.5 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-primary/10 file:text-primary cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Upload Resume / CV File</label>
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setResumeUrl(reader.result as string);
+                              setResumeName(file.name);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="glass-input py-1.5 px-3 text-[10px] file:mr-2 file:py-0.5 file:px-2 file:rounded-full file:border-0 file:text-[10px] file:font-bold file:bg-primary/10 file:text-primary cursor-pointer"
+                      />
+                      {resumeName && <p className="text-[9px] text-emerald-600 font-bold mt-1">Selected: {resumeName}</p>}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Career Interests (Comma-separated)</label>
+                    <input
+                      type="text"
+                      value={interests}
+                      onChange={e => setInterests(e.target.value)}
+                      placeholder="UI UX Design, Software Development, Data Analytics"
+                      className="glass-input py-2 px-3 text-xs"
+                    />
                   </div>
                 </>
               )}

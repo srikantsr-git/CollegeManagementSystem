@@ -152,8 +152,8 @@ app.post('/api/auth/register', async (req, res) => {
     } else if (role === 'student') {
       const p = profileData || {};
       await query.run(
-        'INSERT INTO student_profiles (user_id, grad_year, degree, department, roll_number, resume_url, interests) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [userId, p.grad_year || null, p.degree || '', p.department || '', p.roll_number || '', p.resume_url || '', p.interests || '']
+        'INSERT INTO student_profiles (user_id, grad_year, degree, department, roll_number, resume_url, resume_name, interests, photo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [userId, p.grad_year || null, p.degree || '', p.department || '', p.roll_number || '', p.resume_url || '', p.resume_name || '', p.interests || '', p.photo_url || null]
       );
     }
 
@@ -276,14 +276,14 @@ app.get('/api/student/:id', async (req, res) => {
 });
 
 app.put('/api/student/:id', async (req, res) => {
-  const { full_name, mobile, grad_year, degree, department, roll_number, resume_url, interests } = req.body;
+  const { full_name, mobile, grad_year, degree, department, roll_number, resume_url, resume_name, interests, photo_url } = req.body;
   try {
     await query.run('UPDATE users SET full_name = ?, mobile = ? WHERE id = ?', [full_name, mobile, req.params.id]);
     await query.run(
       `UPDATE student_profiles SET
-        grad_year = ?, degree = ?, department = ?, roll_number = ?, resume_url = ?, interests = ?
+        grad_year = ?, degree = ?, department = ?, roll_number = ?, resume_url = ?, resume_name = ?, interests = ?, photo_url = ?
        WHERE user_id = ?`,
-      [grad_year, degree, department, roll_number, resume_url, interests, req.params.id]
+      [grad_year, degree, department, roll_number, resume_url, resume_name || null, interests, photo_url || null, req.params.id]
     );
     res.json({ success: true, message: 'Profile updated successfully' });
   } catch (err) {
@@ -635,13 +635,17 @@ app.post('/api/donations', async (req, res) => {
 app.get('/api/admin/pending-users', async (req, res) => {
   try {
     const alumni = await query.all(
-      `SELECT u.id, u.role, u.full_name, u.email, u.mobile, u.status, u.created_at, ap.grad_year, ap.degree, ap.department, ap.roll_number
+      `SELECT u.id, u.role, u.full_name, u.email, u.mobile, u.status, u.created_at, 
+              ap.grad_year, ap.degree, ap.department, ap.roll_number, ap.photo_url, 
+              ap.linkedin, ap.skills, ap.achievements, ap.company, ap.designation, ap.industry
        FROM users u
        JOIN alumni_profiles ap ON u.id = ap.user_id
        WHERE u.status = 'pending'`
     );
     const students = await query.all(
-      `SELECT u.id, u.role, u.full_name, u.email, u.mobile, u.status, u.created_at, sp.grad_year, sp.degree, sp.department, sp.roll_number
+      `SELECT u.id, u.role, u.full_name, u.email, u.mobile, u.status, u.created_at, 
+              sp.grad_year, sp.degree, sp.department, sp.roll_number, sp.photo_url, 
+              sp.resume_url, sp.resume_name, sp.interests
        FROM users u
        JOIN student_profiles sp ON u.id = sp.user_id
        WHERE u.status = 'pending'`
@@ -673,11 +677,11 @@ app.get('/api/news', async (req, res) => {
 });
 
 app.post('/api/news', async (req, res) => {
-  const { title, description, date, image_url } = req.body;
+  const { title, description, date, image_url, file_url, file_name } = req.body;
   try {
     const result = await query.run(
-      'INSERT INTO news (title, description, date, image_url) VALUES (?, ?, ?, ?)',
-      [title, description, date, image_url || 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&q=80']
+      'INSERT INTO news (title, description, date, image_url, file_url, file_name) VALUES (?, ?, ?, ?, ?, ?)',
+      [title, description, date, image_url || 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&q=80', file_url || null, file_name || null]
     );
     res.json({ success: true, newsId: result.id });
   } catch (err) {
@@ -698,7 +702,7 @@ app.delete('/api/news/:id', async (req, res) => {
 app.get('/api/custom-pages', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-    const pages = await query.all('SELECT id, title, parent_menu, menu_type, is_visible, updated_at FROM custom_pages ORDER BY title ASC');
+    const pages = await query.all('SELECT id, title, parent_menu, menu_type, is_visible, sort_order, updated_at FROM custom_pages ORDER BY sort_order ASC, title ASC');
     res.json(pages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -719,7 +723,7 @@ app.get('/api/custom-pages/:id', async (req, res) => {
 });
 
 app.post('/api/custom-pages', async (req, res) => {
-  const { id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible } = req.body;
+  const { id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible, sort_order } = req.body;
   if (!id || !title) {
     return res.status(400).json({ error: 'Page ID and Title are required' });
   }
@@ -733,9 +737,9 @@ app.post('/api/custom-pages', async (req, res) => {
       return res.status(400).json({ error: 'A page with this ID/Slug already exists' });
     }
     await query.run(
-      `INSERT INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [id, title, content || '', file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1]
+      `INSERT INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, title, content || '', file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1, sort_order !== undefined ? parseInt(sort_order) : 0]
     );
     res.json({ success: true, message: 'Page created successfully' });
   } catch (err) {
@@ -744,13 +748,13 @@ app.post('/api/custom-pages', async (req, res) => {
 });
 
 app.put('/api/custom-pages/:id', async (req, res) => {
-  const { title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible } = req.body;
+  const { title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible, sort_order } = req.body;
   try {
     await query.run(
       `UPDATE custom_pages 
-       SET title = ?, content = ?, file_url = ?, file_name = ?, parent_menu = ?, menu_type = ?, show_slider = ?, slider_slides = ?, is_visible = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, file_url = ?, file_name = ?, parent_menu = ?, menu_type = ?, show_slider = ?, slider_slides = ?, is_visible = ?, sort_order = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [title, content, file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1, req.params.id]
+      [title, content, file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1, sort_order !== undefined ? parseInt(sort_order) : 0, req.params.id]
     );
     res.json({ success: true, message: 'Page updated successfully' });
   } catch (err) {
@@ -824,7 +828,7 @@ db.serialize(() => {
           title: 'Champion Athletes',
           subtitle: 'Nurturing the Stars of Tomorrow',
           description: 'Our programs develop physical fitness, sportsmanship, and competitive spirit among thousands of students.',
-          btn_text: 'About PCZSC',
+          btn_text: 'About Committee',
           btn_link: 'about-about_us',
           image_url: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80',
           overlay_opacity: 0.6

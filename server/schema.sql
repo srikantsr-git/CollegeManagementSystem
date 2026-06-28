@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS student_profiles (
   department TEXT,
   roll_number TEXT,
   resume_url TEXT,
+  resume_name TEXT,
   interests TEXT,
+  photo_url TEXT,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
@@ -161,7 +163,9 @@ CREATE TABLE IF NOT EXISTS news (
   title TEXT NOT NULL,
   description TEXT,
   date TEXT NOT NULL,
-  image_url TEXT
+  image_url TEXT,
+  file_url TEXT,
+  file_name TEXT
 );
 
 -- Insert Default Settings (OR IGNORE: won't overwrite admin changes on restart)
@@ -290,8 +294,8 @@ VALUES (3, 'New Sports Complex Construction Begins', 'Construction has officiall
 
 -- Seed default custom pages
 INSERT OR REPLACE INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type) VALUES 
-('about_us', 'About Us', 'Apex University Pune City Zone Sports Committee (PCZSC) promotes athletic excellence, organizes collegiate tournaments, and strengthens community health through a variety of sports leagues, events, and training programs.', NULL, NULL, 'about', 'child'),
-('committee', 'PCZSC Committee', 'The Pune City Zone Sports Committee comprises distinguished physical education directors, principals, and coordinators dedicated to organizing zonals, state-level selections, and governing collegiate sports events.', NULL, NULL, 'about', 'child'),
+('about_us', 'About Us', 'Apex University Sports Committee promotes athletic excellence, organizes collegiate tournaments, and strengthens community health through a variety of sports leagues, events, and training programs.', NULL, NULL, 'about', 'child'),
+('committee', 'Committee', 'The Pune City Sports Committee comprises distinguished physical education directors, principals, and coordinators dedicated to organizing zonals, state-level selections, and governing collegiate sports events.', NULL, NULL, 'about', 'child'),
 ('director', 'Director of Phy. Edu.', 'A message from the Director of Physical Education: "Our vision is to build a robust sports ecosystem that encourages high participation, fosters teamwork, and produces state and national-level champions."', NULL, NULL, 'about', 'child'),
 ('circulars', 'Circulars', 'Download the latest administrative circulars, guidelines for tournament registration, eligibility forms, and official announcements here.', NULL, NULL, 'about', 'child'),
 ('souvenirs', 'Souvenirs', 'Browse our digital souvenirs, annual sports magazines, history of trophies, and memorable group photographs from previous collegiate meets.', NULL, NULL, 'student', 'child'),

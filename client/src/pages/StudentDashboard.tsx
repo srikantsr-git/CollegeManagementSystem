@@ -4,7 +4,8 @@ import { DigitalAlumniCard } from '../components/DigitalAlumniCard';
 import { StudentProfile, Mentorship, Job } from '../types';
 import { 
   User, Award, Briefcase, Calendar, GraduationCap, 
-  MapPin, Send, CheckCircle, RefreshCw, LayoutDashboard
+  MapPin, Send, CheckCircle, RefreshCw, LayoutDashboard,
+  Edit2, XCircle, FileText
 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -21,6 +22,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
   const [loading, setLoading] = useState(true);
 
   // Form states
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [fullName, setFullName] = useState('');
   const [mobile, setMobile] = useState('');
   const [gradYear, setGradYear] = useState('');
@@ -28,6 +31,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
   const [department, setDepartment] = useState('');
   const [rollNumber, setRollNumber] = useState('');
   const [resumeUrl, setResumeUrl] = useState('');
+  const [resumeName, setResumeName] = useState('');
   const [interests, setInterests] = useState('');
 
   // Job Search State
@@ -47,7 +51,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
         setDepartment(data.department || '');
         setRollNumber(data.roll_number || '');
         setResumeUrl(data.resume_url || '');
+        setResumeName(data.resume_name || '');
         setInterests(data.interests || '');
+        setPhotoUrl(data.photo_url || null);
       }
     } catch(e) {
       console.warn("Express server offline, student profile mock skipped");
@@ -98,7 +104,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
           department,
           roll_number: rollNumber,
           resume_url: resumeUrl,
-          interests
+          resume_name: resumeName,
+          interests,
+          photo_url: photoUrl
         })
       });
       if (res.ok) {
@@ -199,107 +207,271 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
 
         {/* PROFILE SUB-TAB */}
         {activeSubTab === 'profile' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-              <User className="w-6 h-6 text-primary" /> Profile Settings
-            </h2>
-
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    className="glass-input text-xs"
-                  />
+          <div className="space-y-6">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                    <User className="w-6 h-6 text-primary" /> My Profile
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">View your student portal information and details</p>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mobile Number</label>
-                  <input
-                    type="tel"
-                    required
-                    value={mobile}
-                    onChange={e => setMobile(e.target.value)}
-                    className="glass-input text-xs"
-                  />
-                </div>
+                <button
+                  onClick={() => setIsEditProfileModalOpen(true)}
+                  className="btn-primary text-xs font-bold py-2 px-4 flex items-center gap-2 cursor-pointer"
+                >
+                  <Edit2 className="w-4 h-4" /> Edit Profile
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Roll Number</label>
-                  <input
-                    type="text"
-                    required
-                    value={rollNumber}
-                    onChange={e => setRollNumber(e.target.value)}
-                    className="glass-input text-xs"
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* Left Profile Card */}
+                <div className="w-full md:w-1/3 flex flex-col items-center text-center">
+                  <img
+                    src={photoUrl || 'https://via.placeholder.com/150'}
+                    alt="Profile"
+                    className="w-36 h-36 rounded-full object-cover shadow-xl border-4 border-white dark:border-slate-800 mb-5"
                   />
+                  <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">{fullName || 'Unknown Student'}</h3>
+                  <p className="text-sm text-primary font-bold mt-1">{degree || 'No Degree'} {department && `in ${department}`}</p>
+                  <p className="text-xs text-slate-500 mt-2 font-medium">Roll Number: {rollNumber || 'N/A'}</p>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Graduation Target Year</label>
-                  <input
-                    type="number"
-                    required
-                    value={gradYear}
-                    onChange={e => setGradYear(e.target.value)}
-                    className="glass-input text-xs"
-                  />
+
+                {/* Right Details Grid */}
+                <div className="w-full md:w-2/3 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{fullName || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mobile Number</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{mobile || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Roll Number</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{rollNumber || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Graduation Year</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{gradYear || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Course / Degree</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{degree || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Department</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{department || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Resume / CV Document</p>
+                    {resumeUrl ? (
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-primary shrink-0" />
+                        <a
+                          href={resumeUrl.startsWith('data:') || resumeUrl.startsWith('http') ? resumeUrl : `https://${resumeUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={resumeName || 'student-resume.pdf'}
+                          className="text-sm font-bold text-primary hover:underline truncate"
+                        >
+                          {resumeName ? `Download ${resumeName}` : 'View / Download Resume File'}
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 font-medium">No resume document uploaded yet.</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Career Interests</p>
+                    <div className="flex flex-wrap gap-2">
+                      {interests ? interests.split(',').map((interest, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                          {interest.trim()}
+                        </span>
+                      )) : <span className="text-sm text-slate-500 font-medium">No interests listed.</span>}
+                    </div>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Course / Degree</label>
-                  <input
-                    type="text"
-                    required
-                    value={degree}
-                    onChange={e => setDegree(e.target.value)}
-                    className="glass-input text-xs"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</label>
-                  <input
-                    type="text"
-                    required
-                    value={department}
-                    onChange={e => setDepartment(e.target.value)}
-                    className="glass-input text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Resume Link (PDF URL / Google Drive Link)</label>
-                <input
-                  type="text"
-                  value={resumeUrl}
-                  onChange={e => setResumeUrl(e.target.value)}
-                  placeholder="https://drive.google.com/file/d/..."
-                  className="glass-input text-xs"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Career Interests (Comma-separated)</label>
-                <input
-                  type="text"
-                  value={interests}
-                  onChange={e => setInterests(e.target.value)}
-                  placeholder="Machine Learning, Product Management, UI UX Design"
-                  className="glass-input text-xs"
-                />
-              </div>
-
-              <button type="submit" className="btn-primary py-3 px-8 text-xs font-bold shadow-md shadow-primary/20">
-                Update Student Profile
+        {/* EDIT PROFILE MODAL */}
+        {isEditProfileModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto pt-20 pb-20">
+            <div className="glass-card w-full max-w-4xl p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 shadow-2xl relative my-auto animate-in fade-in zoom-in-95 duration-200 bg-white dark:bg-slate-950">
+              <button 
+                onClick={() => setIsEditProfileModalOpen(false)} 
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-650 dark:hover:text-slate-300 transition-colors bg-slate-100 dark:bg-slate-800 rounded-full cursor-pointer"
+              >
+                <XCircle className="w-6 h-6" />
               </button>
-            </form>
+
+              <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4 text-left">
+                <User className="w-6 h-6 text-primary" /> Edit Student Profile
+              </h2>
+
+              <form onSubmit={(e) => {
+                handleProfileSubmit(e);
+                setIsEditProfileModalOpen(false);
+              }} className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={e => setFullName(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Mobile Number</label>
+                    <input
+                      type="tel"
+                      required
+                      value={mobile}
+                      onChange={e => setMobile(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Roll Number</label>
+                    <input
+                      type="text"
+                      required
+                      value={rollNumber}
+                      onChange={e => setRollNumber(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Graduation Target Year</label>
+                    <input
+                      type="number"
+                      required
+                      value={gradYear}
+                      onChange={e => setGradYear(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Course / Degree</label>
+                    <input
+                      type="text"
+                      required
+                      value={degree}
+                      onChange={e => setDegree(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Department</label>
+                    <input
+                      type="text"
+                      required
+                      value={department}
+                      onChange={e => setDepartment(e.target.value)}
+                      className="glass-input text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload Resume / CV File</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setResumeUrl(reader.result as string);
+                              setResumeName(file.name);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="glass-input text-xs file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer flex-1"
+                      />
+                      {resumeName && (
+                        <button
+                          type="button"
+                          onClick={() => { setResumeUrl(''); setResumeName(''); }}
+                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer p-2 rounded-lg bg-rose-50 dark:bg-rose-950/20"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    {resumeName && (
+                      <p className="text-[10px] text-slate-400 font-medium mt-1">Uploaded: {resumeName}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Profile Photo</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setPhotoUrl(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="glass-input text-xs file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5 text-left">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Career Interests (Comma-separated)</label>
+                  <input
+                    type="text"
+                    value={interests}
+                    onChange={e => setInterests(e.target.value)}
+                    placeholder="Machine Learning, Product Management, UI UX Design"
+                    className="glass-input text-xs"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 border-t border-slate-200 dark:border-slate-800 pt-6">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditProfileModalOpen(false)}
+                    className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-slate-650 dark:text-slate-350 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn-primary py-2.5 px-8 text-xs font-bold shadow-md shadow-primary/20 cursor-pointer"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 

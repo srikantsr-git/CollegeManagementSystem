@@ -36,6 +36,7 @@ export const alumniItems: NavigationItem[] = [
 
 export const adminItems: NavigationItem[] = [
   { id: 'dashboard', label: 'Dashboard Hub', description: 'Administration overview hub and system controls', icon: LayoutDashboard },
+  { id: 'menu-manager', label: 'Manage Menus/Pages', description: 'Configure structure, titles, ordering, and visibility of all menus and submenus', icon: SlidersHorizontal },
   { id: 'approvals', label: 'Verification Center', description: 'Review and verify student & alumni registrations', icon: ClipboardCheck },
   { id: 'events-manager', label: 'Create Event', description: 'Create, schedule, and publish events to the platform', icon: PlusSquare },
   { id: 'news-manager', label: 'Manage News', description: 'Publish notices, updates, and announcements', icon: Newspaper },
@@ -47,8 +48,6 @@ export const adminItems: NavigationItem[] = [
   { id: 'results-manager', label: 'Draws & Results', description: 'Publish sports tournament results and schedules', icon: Trophy },
   { id: 'about-manager', label: 'Manage Static pages', description: 'Manage static pages and core information under About', icon: FileText },
   { id: 'academic-pages-manager', label: 'Manage Academic Pages', description: 'Manage custom pages under the Academic menu dropdown', icon: FileText },
-  { id: 'student-pages-manager', label: 'Manage Student Pages', description: 'Manage custom pages under the Student Corner menu dropdown', icon: FileText },
-  { id: 'standalone-pages-manager', label: 'Manage Independent Pages', description: 'Manage custom standalone pages not under any dropdown', icon: SlidersHorizontal },
   { id: 'courses-manager', label: 'Manage Courses', description: 'Manage undergraduate and postgraduate courses', icon: BookOpen },
   { id: 'admission-manager', label: 'Manage Admissions', description: 'Manage admission announcements and eligibility details', icon: UserCheck },
   { id: 'jobs', label: 'Post / Apply Jobs', description: 'Moderate and review posted career opportunities', icon: Briefcase },
@@ -73,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab 
   const adminSections = [
     {
       title: "Core Portal Controls",
-      items: ["dashboard", "approvals", "analytics", "branding"]
+      items: ["dashboard", "menu-manager", "approvals", "analytics", "branding"]
     },
     {
       title: "About Us Dropdown Menu",
@@ -85,11 +84,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab 
     },
     {
       title: "Student Corner Dropdown",
-      items: ["student-pages-manager", "events-manager", "news-manager", "results-manager"]
+      items: ["events-manager", "news-manager", "results-manager"]
     },
     {
       title: "Independent Dropdowns & Links",
-      items: ["standalone-pages-manager", "gallery-manager", "placement-manager", "slider-manager", "jobs", "donations-manager"]
+      items: ["gallery-manager", "placement-manager", "slider-manager", "jobs", "donations-manager"]
     }
   ];
 

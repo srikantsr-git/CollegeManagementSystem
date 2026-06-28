@@ -35,6 +35,52 @@ function initializeDatabase() {
         db.run("ALTER TABLE custom_pages ADD COLUMN is_visible INTEGER DEFAULT 1;", () => {});
         db.run("ALTER TABLE custom_pages ADD COLUMN show_slider INTEGER DEFAULT 0;", () => {});
         db.run("ALTER TABLE custom_pages ADD COLUMN slider_slides TEXT DEFAULT '[]';", () => {});
+        db.run("ALTER TABLE custom_pages ADD COLUMN sort_order INTEGER DEFAULT 0;", () => {
+          const seedMenus = [
+            { id: 'about', title: 'About Us', parent_menu: 'none', menu_type: 'parent', sort_order: 1 },
+            { id: 'academic', title: 'Academic', parent_menu: 'none', menu_type: 'parent', sort_order: 2 },
+            { id: 'student', title: 'Student Corner', parent_menu: 'none', menu_type: 'parent', sort_order: 3 },
+            { id: 'directory', title: 'Alumni', parent_menu: 'none', menu_type: 'standalone', sort_order: 4 },
+            { id: 'gallery', title: 'Gallery', parent_menu: 'none', menu_type: 'standalone', sort_order: 5 },
+            { id: 'placements', title: 'Placements', parent_menu: 'none', menu_type: 'standalone', sort_order: 6 },
+            { id: 'donations', title: 'Donations', parent_menu: 'none', menu_type: 'standalone', sort_order: 7 },
+            { id: 'contact', title: 'Contact', parent_menu: 'none', menu_type: 'standalone', sort_order: 8 },
+            { id: 'about_us', title: 'About Us', parent_menu: 'about', menu_type: 'child', sort_order: 1 },
+            { id: 'committee', title: 'Committee', parent_menu: 'about', menu_type: 'child', sort_order: 2 },
+            { id: 'hods', title: 'From HODs/Directors Desk', parent_menu: 'about', menu_type: 'child', sort_order: 3 },
+            { id: 'director', title: 'Director of Phy. Edu.', parent_menu: 'about', menu_type: 'child', sort_order: 4 },
+            { id: 'circulars', title: 'Circulars', parent_menu: 'about', menu_type: 'child', sort_order: 5 },
+            { id: 'ncte', title: 'NCTE Mandatory Disclosures', parent_menu: 'about', menu_type: 'child', sort_order: 6 },
+            { id: 'facilities', title: 'Facilities', parent_menu: 'about', menu_type: 'child', sort_order: 7 },
+            { id: 'courses', title: 'Academic Courses', parent_menu: 'academic', menu_type: 'child', sort_order: 1 },
+            { id: 'admission', title: 'Admissions Notice', parent_menu: 'academic', menu_type: 'child', sort_order: 2 },
+            { id: 'syllabus', title: 'Curriculum Syllabus', parent_menu: 'academic', menu_type: 'child', sort_order: 3 },
+            { id: 'academic_results', title: 'Academic Results', parent_menu: 'academic', menu_type: 'child', sort_order: 4 },
+            { id: 'events', title: 'Events', parent_menu: 'student', menu_type: 'child', sort_order: 1 },
+            { id: 'stories', title: 'Stories', parent_menu: 'student', menu_type: 'child', sort_order: 2 },
+            { id: 'careers', title: 'Careers', parent_menu: 'student', menu_type: 'child', sort_order: 3 },
+            { id: 'activities', title: 'Activities', parent_menu: 'student', menu_type: 'child', sort_order: 4 },
+            { id: 'research', title: 'Research', parent_menu: 'student', menu_type: 'child', sort_order: 5 },
+            { id: 'projects', title: 'Projects', parent_menu: 'student', menu_type: 'child', sort_order: 6 },
+            { id: 'calendar', title: 'Sports Calendar', parent_menu: 'student', menu_type: 'child', sort_order: 7 },
+            { id: 'souvenirs', title: 'Souvenirs', parent_menu: 'student', menu_type: 'child', sort_order: 8 },
+            { id: 'draws', title: 'Draws', parent_menu: 'student', menu_type: 'child', sort_order: 9 },
+            { id: 'results', title: 'Results', parent_menu: 'student', menu_type: 'child', sort_order: 10 }
+          ];
+
+          seedMenus.forEach(m => {
+            db.run(
+              "INSERT OR IGNORE INTO custom_pages (id, title, content, parent_menu, menu_type, sort_order, is_visible) VALUES (?, ?, '', ?, ?, ?, 1)",
+              [m.id, m.title, m.parent_menu, m.menu_type, m.sort_order],
+              () => {
+                db.run(
+                  "UPDATE custom_pages SET parent_menu = ?, menu_type = ?, sort_order = ? WHERE id = ?",
+                  [m.parent_menu, m.menu_type, m.sort_order, m.id]
+                );
+              }
+            );
+          });
+        });
         db.run("ALTER TABLE settings ADD COLUMN show_top_header INTEGER DEFAULT 1;", () => {});
         db.run("ALTER TABLE settings ADD COLUMN top_header_phone TEXT DEFAULT '+953 012 3654 896';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN top_header_email TEXT DEFAULT 'support@apex.edu';", () => {});
@@ -55,6 +101,10 @@ function initializeDatabase() {
         db.run("ALTER TABLE directors ADD COLUMN profile_pdf_name TEXT;", () => {});
         db.run("ALTER TABLE alumni_profiles ADD COLUMN address TEXT;", () => {});
         db.run("ALTER TABLE alumni_profiles ADD COLUMN college TEXT;", () => {});
+        db.run("ALTER TABLE student_profiles ADD COLUMN photo_url TEXT;", () => {});
+        db.run("ALTER TABLE student_profiles ADD COLUMN resume_name TEXT;", () => {});
+        db.run("ALTER TABLE news ADD COLUMN file_url TEXT;", () => {});
+        db.run("ALTER TABLE news ADD COLUMN file_name TEXT;", () => {});
         db.run(`CREATE TABLE IF NOT EXISTS hods (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, designation TEXT NOT NULL DEFAULT '', photo_url TEXT, college_name TEXT, college_address TEXT, mobile_number TEXT, email TEXT, message TEXT, sort_order INTEGER DEFAULT 0, profile_pdf_url TEXT, profile_pdf_name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`, () => {});
         db.run(`CREATE TABLE IF NOT EXISTS spotlights (
           id INTEGER PRIMARY KEY AUTOINCREMENT,

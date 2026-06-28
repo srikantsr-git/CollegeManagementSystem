@@ -3,8 +3,8 @@ import { useTheme } from '../components/ThemeManager';
 import { Event } from '../types';
 import { 
   Users, Globe, CheckCircle, Building2, Calendar, 
-  ArrowRight, Award, Newspaper, Star, Sparkles,
-  ChevronLeft, ChevronRight, Briefcase
+  ArrowRight, ArrowRight as ArrowRightIcon, Award, Newspaper, Star, Sparkles,
+  ChevronLeft, ChevronRight, Briefcase, FileText
 } from 'lucide-react';
 
 interface HomeProps {
@@ -59,7 +59,7 @@ const DEFAULT_SLIDES = [
     title: 'Champion Athletes',
     subtitle: 'Nurturing the Stars of Tomorrow',
     description: 'Our programs develop physical fitness, sportsmanship, and competitive spirit among thousands of students.',
-    btn_text: 'About PCZSC', btn_link: 'about-about_us',
+    btn_text: 'About Committee', btn_link: 'about-about_us',
     image_url: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?w=1920&q=80',
     overlay_opacity: 0.6, active: 1
   },
@@ -259,7 +259,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
               {/* Subtitle / tag */}
               <span className="hero-tag-anim inline-flex items-center gap-1.5 mb-3 px-3 py-1 rounded-full text-[10px] font-bold bg-primary/90 text-white uppercase tracking-widest shadow-md">
                 <Sparkles className="w-3 h-3" />
-                {heroSlides[activeHeroIdx].subtitle || 'PCZSC Portal'}
+                {heroSlides[activeHeroIdx].subtitle || 'Sports Portal'}
               </span>
 
               {/* Main title */}
@@ -615,6 +615,29 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
               <div className="text-sm text-slate-650 dark:text-slate-300 leading-relaxed font-light max-h-60 overflow-y-auto pr-1 html-content"
                 dangerouslySetInnerHTML={{ __html: selectedNews.description }}
               />
+
+              {selectedNews.file_url && (
+                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/20 dark:border-primary/10 flex items-center justify-between gap-4 mt-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                      <FileText className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-white truncate">Attached Notice Document</p>
+                      <p className="text-[10px] text-slate-500 truncate">{selectedNews.file_name || 'Download attachment'}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={selectedNews.file_url}
+                    download={selectedNews.file_name || 'notice-document.pdf'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary py-1.5 px-4 text-[10px] font-extrabold shadow-sm shrink-0 cursor-pointer text-center"
+                  >
+                    Download / View
+                  </a>
+                </div>
+              )}
               
               <div className="pt-2 flex justify-end">
                 <button

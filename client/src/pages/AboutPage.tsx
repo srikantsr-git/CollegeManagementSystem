@@ -37,7 +37,7 @@ interface ResultItem {
 // â”€â”€â”€ Sub-page metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ABOUT_PAGES = [
   { id: 'about_us',         group: 'about',   label: 'About Us',                   icon: Info,            color: 'from-blue-600 to-indigo-700',    badge: 'Organisation', description: 'Learn who we are, our vision and our mission.' },
-  { id: 'committee',        group: 'about',   label: 'PCZSC Committee',            icon: Users,           color: 'from-emerald-600 to-teal-700',   badge: 'Governance',   description: 'Meet the dedicated committee members guiding PCZSC.' },
+  { id: 'committee',        group: 'about',   label: 'Committee',                  icon: Users,           color: 'from-emerald-600 to-teal-700',   badge: 'Governance',   description: 'Meet the dedicated committee members guiding our sports portal.' },
   { id: 'hods',             group: 'about',   label: 'From HODs/Directors Desk',   icon: Home,            color: 'from-sky-600 to-blue-700',       badge: 'Leadership',   description: 'Messages from Heads of Departments and Directors.' },
   { id: 'director',         group: 'about',   label: 'Director of Phy. Edu.',      icon: Activity,        color: 'from-violet-600 to-purple-700',  badge: 'Leadership',   description: 'Message and profile of the Director of Physical Education.' },
   { id: 'circulars',        group: 'about',   label: 'Circulars',                  icon: FileText,        color: 'from-amber-500 to-orange-600',   badge: 'Notices',      description: 'Official circulars and administrative announcements.' },
@@ -1307,7 +1307,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
 
           <div className="space-y-1 flex-1 min-w-0">
             <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-white/60">
-              <span>{meta.group === 'academic' ? 'Academic' : meta.group === 'student' ? 'Student Corner' : 'About PCZSC'}</span>
+              <span>{meta.group === 'academic' ? 'Academic' : meta.group === 'student' ? 'Student Corner' : 'About Committee'}</span>
               <ChevronRight className="w-2.5 h-2.5" />
               <span className="text-white/90">{meta.label}</span>
             </div>
@@ -1514,7 +1514,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
                   <Users className="w-4 h-4 text-white" />
                 </div>
                 <div>
-                  <h2 className="font-bold text-sm text-slate-800 dark:text-white">PCZSC Committee Members</h2>
+                  <h2 className="font-bold text-sm text-slate-800 dark:text-white">Committee Members</h2>
                   <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Governance</p>
                 </div>
               </div>

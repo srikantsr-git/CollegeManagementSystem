@@ -41,30 +41,30 @@ const MainAppContent: React.FC = () => {
   useEffect(() => {
     (window as any).alert = (message: string) => {
       let type: 'success' | 'error' | 'info' = 'info';
-      let title = 'Notification';
+      let title = 'System Notification';
       const msgLower = String(message).toLowerCase();
-      if (
-        msgLower.includes('fail') ||
-        msgLower.includes('error') ||
-        msgLower.includes('invalid') ||
-        msgLower.includes('reject') ||
-        msgLower.includes('incorrect') ||
-        msgLower.includes('not readable')
-      ) {
+
+      const successKeywords = [
+        'success', 'approved', 'started', 'submitted', 'added', 'saved', 'deleted', 
+        'updated', 'removed', 'sent', 'published', 'posted', 'verified', 'scheduled', 
+        'joined', 'applied', 'complete', 'created', 'changed', 'enabled', 'disabled', 
+        'activated', 'deactivated', 'uploaded', 'cleared', 'unlocked', 'authorized'
+      ];
+
+      const errorKeywords = [
+        'fail', 'error', 'invalid', 'reject', 'incorrect', 'not readable', 'cannot', 
+        'unable', 'could not', 'offline', 'wrong', 'require', 'missing', 'unauthorized', 
+        'forbidden', 'denied', 'limit', 'not allowed', 'failed', 'empty', 'already registered'
+      ];
+
+      if (errorKeywords.some(keyword => msgLower.includes(keyword))) {
         type = 'error';
-        title = 'Error';
-      } else if (
-        msgLower.includes('success') ||
-        msgLower.includes('approved') ||
-        msgLower.includes('started') ||
-        msgLower.includes('submitted') ||
-        msgLower.includes('added') ||
-        msgLower.includes('saved') ||
-        msgLower.includes('deleted')
-      ) {
+        title = 'Action Failed';
+      } else if (successKeywords.some(keyword => msgLower.includes(keyword))) {
         type = 'success';
-        title = 'Success';
+        title = 'Action Successful';
       }
+
       setModal({ isOpen: true, title, message, type });
     };
   }, []);

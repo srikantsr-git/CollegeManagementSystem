@@ -11,8 +11,7 @@ import {
   Briefcase, PlusCircle, LayoutDashboard, Building2, Award, Loader2
 } from 'lucide-react';
 
-
-
+import { MenuNavigationManager } from '../components/MenuNavigationManager';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, 
   ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell 
@@ -1203,6 +1202,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [pendingUsers, setPendingUsers] = useState<any[]>([]);
   const [allDonations, setAllDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedUserId, setExpandedUserId] = useState<number | null>(null);
 
   // Custom confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -1304,6 +1304,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [newsDesc, setNewsDesc] = useState('');
   const [newsDate, setNewsDate] = useState('');
   const [newsImg, setNewsImg] = useState('');
+  const [newsFileUrl, setNewsFileUrl] = useState<string | null>(null);
+  const [newsFileName, setNewsFileName] = useState<string | null>(null);
   const [newsCreated, setNewsCreated] = useState(false);
 
   // About Pages State variables
@@ -1822,6 +1824,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     });
     if (success) {
       setBrandingSaved(true);
+      alert("Branding settings saved and updated successfully!");
       setTimeout(() => setBrandingSaved(false), 3000);
     } else {
       alert("Failed to save settings on server.");
@@ -2064,7 +2067,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
           title: newsTitle,
           description: newsDesc,
           date: newsDate,
-          image_url: newsImg
+          image_url: newsImg,
+          file_url: newsFileUrl,
+          file_name: newsFileName
         })
       });
       if (res.ok) {
@@ -2073,6 +2078,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setNewsDesc('');
         setNewsDate('');
         setNewsImg('');
+        setNewsFileUrl(null);
+        setNewsFileName(null);
         // Refresh news list
         const refreshedRes = await fetch('http://localhost:5001/api/news');
         const refreshedData = await refreshedRes.json();
@@ -2942,7 +2949,214 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* ── APPROVALS TAB ── */}
         {activeSubTab === 'approvals' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6"><ClipboardCheck className="w-6 h-6 text-primary" /> Verification Center</h2><p className="text-sm text-slate-500 mb-6">Validate graduation credentials and student enrollment records before unlocking portal features.</p>{loading ? <div className="flex justify-center py-12"><RefreshCw className="w-6 h-6 text-primary animate-spin" /></div> : pendingUsers.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-850"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Name / Role</th><th className="p-4">Roll Num / Grad</th><th className="p-4">Email / Mobile</th><th className="p-4">Dept / Course</th><th className="p-4 text-center">Action Actions</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{pendingUsers.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold"><p className="text-slate-800 dark:text-white font-bold">{e.full_name}</p><span className="text-[10px] bg-primary-light text-primary font-bold px-1.5 py-0.2 rounded uppercase">{e.role}</span></td><td className="p-4 font-mono">{e.roll_number || "N/A"} <br />({e.grad_year})</td><td className="p-4"><p>{e.email}</p><p className="text-slate-400 mt-0.5">{e.mobile}</p></td><td className="p-4 font-semibold">{e.department} <br /><span className="text-[10px] text-slate-400">{e.degree}</span></td><td className="p-4 flex items-center justify-center gap-2"><button onClick={() => handleVerifyUser(e.id, "approved")} className="p-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 transition-all" title="Approve Profile"><Check className="w-4 h-4" /></button><button onClick={() => handleVerifyUser(e.id, "rejected")} className="p-2 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 transition-all" title="Reject Profile"><X className="w-4 h-4" /></button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-10">No pending profile authorizations currently in queue.</p>}</div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6">
+              <ClipboardCheck className="w-6 h-6 text-primary" /> Verification Center
+            </h2>
+            <p className="text-sm text-slate-500 mb-6 font-medium">
+              Validate graduation credentials, profile photos, uploaded resumes/CV files, and student enrollment records before unlocking portal features.
+            </p>
+            {loading ? (
+              <div className="flex justify-center py-12">
+                <RefreshCw className="w-6 h-6 text-primary animate-spin" />
+              </div>
+            ) : pendingUsers.length > 0 ? (
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-850">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="p-4">Name / Role</th>
+                      <th className="p-4">Roll Num / Grad</th>
+                      <th className="p-4">Email / Mobile</th>
+                      <th className="p-4">Dept / Course</th>
+                      <th className="p-4 text-center">Action Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                    {pendingUsers.map((e) => {
+                      const isExpanded = expandedUserId === e.id;
+                      return (
+                        <React.Fragment key={e.id}>
+                          <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-all">
+                            <td className="p-4 font-semibold">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 shrink-0">
+                                  <img
+                                    src={e.photo_url || 'https://via.placeholder.com/150'}
+                                    alt={e.full_name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                                <div>
+                                  <p className="text-slate-850 dark:text-white font-extrabold">{e.full_name}</p>
+                                  <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                    e.role === 'alumni' ? 'bg-indigo-150 text-indigo-705 dark:bg-indigo-950/45 dark:text-indigo-400' : 'bg-amber-150 text-amber-705 dark:bg-amber-950/45 dark:text-amber-400'
+                                  }`}>
+                                    {e.role}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="p-4 font-mono font-bold">
+                              {e.roll_number || "N/A"} <br />
+                              <span className="text-[10px] text-slate-450 font-semibold">Class of {e.grad_year}</span>
+                            </td>
+                            <td className="p-4 font-semibold">
+                              <p className="text-slate-700 dark:text-slate-350">{e.email}</p>
+                              <p className="text-slate-400 dark:text-slate-500 mt-0.5">{e.mobile || 'No Mobile'}</p>
+                            </td>
+                            <td className="p-4 font-semibold">
+                              {e.department} <br />
+                              <span className="text-[10px] text-slate-400 dark:text-slate-500">{e.degree}</span>
+                            </td>
+                            <td className="p-4">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <button
+                                  onClick={() => setExpandedUserId(isExpanded ? null : e.id)}
+                                  className="px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold text-[10px] text-slate-650 dark:text-slate-300 cursor-pointer"
+                                >
+                                  {isExpanded ? 'Hide Details' : 'View Credentials'}
+                                </button>
+                                <button
+                                  onClick={() => handleVerifyUser(e.id, "approved")}
+                                  className="p-1.5 rounded-lg bg-emerald-100 dark:bg-emerald-950/30 hover:bg-emerald-200 text-emerald-700 dark:text-emerald-400 transition-all cursor-pointer"
+                                  title="Approve Profile"
+                                >
+                                  <Check className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleVerifyUser(e.id, "rejected")}
+                                  className="p-1.5 rounded-lg bg-rose-100 dark:bg-rose-950/30 hover:bg-rose-200 text-rose-700 dark:text-rose-450 transition-all cursor-pointer"
+                                  title="Reject Profile"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Expanded detail row */}
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan={5} className="p-5 bg-slate-50/70 dark:bg-slate-900/35 border-t border-b border-slate-100 dark:border-slate-800 text-left">
+                                <div className="flex flex-col sm:flex-row gap-6">
+                                  {/* Left large avatar */}
+                                  <div className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800 shrink-0 mx-auto sm:mx-0">
+                                    <img
+                                      src={e.photo_url || 'https://via.placeholder.com/150'}
+                                      alt={e.full_name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+
+                                  {/* Right Detailed Info */}
+                                  <div className="flex-1 space-y-4 text-xs">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                                      <div>
+                                        <p className="text-[10px] font-bold text-slate-450 uppercase tracking-wider mb-0.5">Email</p>
+                                        <p className="font-bold text-slate-700 dark:text-slate-250">{e.email}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">Mobile Number</p>
+                                        <p className="font-bold text-slate-700 dark:text-slate-250">{e.mobile || 'N/A'}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">Department & Course</p>
+                                        <p className="font-bold text-slate-700 dark:text-slate-250">{e.department} ({e.degree})</p>
+                                      </div>
+                                    </div>
+
+                                    {/* Student Specific Verification details */}
+                                    {e.role === 'student' && (
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-slate-100 dark:border-slate-800/60 pt-3">
+                                        <div>
+                                          <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1.5">Resume / CV Document File</p>
+                                          {e.resume_url ? (
+                                            <div className="flex items-center gap-2">
+                                              <FileText className="w-4 h-4 text-primary shrink-0" />
+                                              <a
+                                                href={e.resume_url.startsWith('data:') || e.resume_url.startsWith('http') ? e.resume_url : `https://${e.resume_url}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                download={e.resume_name || 'student-resume.pdf'}
+                                                className="text-xs font-bold text-primary hover:underline truncate"
+                                              >
+                                                {e.resume_name ? `Download ${e.resume_name}` : 'Download Uploaded Resume'}
+                                              </a>
+                                            </div>
+                                          ) : (
+                                            <span className="text-[11px] font-medium text-slate-500">No Resume uploaded.</span>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1">Career Interests</p>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {e.interests ? e.interests.split(',').map((interest: string, idx: number) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-primary/15 text-primary text-[10px] font-bold rounded-full">
+                                                {interest.trim()}
+                                              </span>
+                                            )) : <span className="text-[11px] text-slate-500 font-medium">None specified</span>}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Alumni Specific Verification details */}
+                                    {e.role === 'alumni' && (
+                                      <div className="space-y-3 border-t border-slate-100 dark:border-slate-800/60 pt-3">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">Current Company / Org</p>
+                                            <p className="font-bold text-slate-700 dark:text-slate-250">{e.company || 'N/A'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">Designation Title</p>
+                                            <p className="font-bold text-slate-700 dark:text-slate-250">{e.designation || 'N/A'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">LinkedIn Profile</p>
+                                            <p className="font-bold text-primary truncate">
+                                              {e.linkedin ? (
+                                                <a href={e.linkedin.startsWith('http') ? e.linkedin : `https://${e.linkedin}`} target="_blank" rel="noreferrer" className="hover:underline">
+                                                  {e.linkedin}
+                                                </a>
+                                              ) : 'N/A'}
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-1">Skills</p>
+                                          <div className="flex flex-wrap gap-1.5">
+                                            {e.skills ? e.skills.split(',').map((skill: string, idx: number) => (
+                                              <span key={idx} className="px-2 py-0.5 bg-indigo-50 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold rounded-full">
+                                                {skill.trim()}
+                                              </span>
+                                            )) : <span className="text-[11px] text-slate-500 font-medium">None listed</span>}
+                                          </div>
+                                        </div>
+                                        {e.achievements && (
+                                          <div>
+                                            <p className="text-[10px] font-bold text-slate-455 uppercase tracking-wider mb-0.5">Professional Achievements</p>
+                                            <p className="text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed break-words">{e.achievements}</p>
+                                          </div>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-slate-400 text-center py-10 font-semibold">No pending profile authorizations currently in queue.</p>
+            )}
+          </div>
         )}
 
         {/* ── EVENTS-MANAGER TAB ── */}
@@ -2952,12 +3166,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* ── NEWS-MANAGER TAB ── */}
         {activeSubTab === 'news-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Newspaper className="w-6 h-6 text-primary" /> Manage News & Notices</h2><p className="text-sm text-slate-500">Publish news announcements and notice boards which appear in the dynamic column on the Homepage.</p>{newsCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Announcement published successfully to Homepage Notices feed!</div>}<form onSubmit={handleCreateNews} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Title</label><input type="text" required={!0} value={newsTitle} onChange={(e) => setNewsTitle(e.target.value)} placeholder="e.g. PCZSC Annual Athletics Meet Schedule" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={newsDate} onChange={(e) => setNewsDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Description</label><RichTextEditor value={newsDesc} onChange={setNewsDesc} placeholder="Provide detailed description of the sports tournament, circular guidelines..." /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image Banner URL (Optional)</label><input type="text" value={newsImg} onChange={(e) => setNewsImg(e.target.value)} placeholder="https://images.unsplash.com/..." className="glass-input" /></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Announcement</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Notices & Announcements</h3>{allNews.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Publish Date</th><th className="p-4">Title</th><th className="p-4">Description Preview</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allNews.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4 truncate max-w-xs">{e.description}</td><td className="p-4 text-center"><button onClick={() => handleDeleteNews(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No announcements currently published.</p>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Newspaper className="w-6 h-6 text-primary" /> Manage News & Notices</h2><p className="text-sm text-slate-500">Publish news announcements and notice boards which appear in the dynamic column on the Homepage.</p>{newsCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">Announcement published successfully to Homepage Notices feed!</div>}<form onSubmit={handleCreateNews} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Title</label><input type="text" required={!0} value={newsTitle} onChange={(e) => setNewsTitle(e.target.value)} placeholder="e.g. Annual Athletics Meet Schedule" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={newsDate} onChange={(e) => setNewsDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Notice Description</label><RichTextEditor value={newsDesc} onChange={setNewsDesc} placeholder="Provide detailed description of the sports tournament, circular guidelines..." /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Image Banner URL (Optional)</label><input type="text" value={newsImg} onChange={(e) => setNewsImg(e.target.value)} placeholder="https://images.unsplash.com/..." className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Upload PDF / JPG / Document Attachment (Optional)</label><input type="file" accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx" onChange={(e) => {const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => { setNewsFileUrl(reader.result as string); setNewsFileName(file.name); }; reader.readAsDataURL(file); } }} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer text-[11px] w-full" />{newsFileName && <div className="flex items-center gap-1.5 mt-1"><span className="text-[10px] text-emerald-600 font-bold">Selected attachment: {newsFileName}</span><button type="button" onClick={() => { setNewsFileUrl(null); setNewsFileName(null); }} className="text-rose-500 hover:text-rose-650 font-bold text-[10px] shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish Announcement</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active Notices & Announcements</h3>{allNews.length > 0 ? <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-4">Publish Date</th><th className="p-4">Title</th><th className="p-4">Description Preview</th><th className="p-4 text-center">Action</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allNews.map((e) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20"><td className="p-4 font-semibold whitespace-nowrap">{e.date}</td><td className="p-4 font-bold text-slate-800 dark:text-white">{e.title}</td><td className="p-4 truncate max-w-xs">{e.description}</td><td className="p-4 text-center"><button onClick={() => handleDeleteNews(e.id)} className="px-2.5 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 text-[10px] font-bold transition-all cursor-pointer">Delete</button></td></tr>)}</tbody></table></div> : <p className="text-slate-400 text-center py-6">No announcements currently published.</p>}</div></div>
         )}
 
         {/* ── COMMITTEE-MANAGER TAB ── */}
         {activeSubTab === 'committee-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><div><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Users className="w-6 h-6 text-primary" /> PCZSC Committee Manager</h2><p className="text-sm text-slate-500 mt-1">Add, edit, or remove committee members. Changes appear live on the public <strong>PCZSC Committee</strong> page.</p></div>{cmSaved && <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3 text-xs flex items-center gap-2"><Check className="w-4 h-4" /> Committee member saved successfully!</div>}<form onSubmit={handleCommitteeSave} className="space-y-4 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl p-5 bg-slate-50/40 dark:bg-slate-950/20"><div className="flex items-center justify-between mb-1"><h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest">{committeeEditId ? "✏️ Edit Member" : "➕ Add New Member"}</h3>{committeeEditId && <button type="button" onClick={() => {setCommitteeEditId(null),setCmForm({name:``,designation:``,photo_url:``,college_name:``,college_address:``,contact_details:``,sort_order:0,profile_pdf_url:null,profile_pdf_name:null})}} className="text-[10px] font-bold text-rose-500 hover:text-rose-700 transition-colors">Cancel Edit</button>}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"><div className="space-y-3"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label><input type="text" required={!0} value={cmForm.name} onChange={(e) => setCmForm((t) => ({ ...t, name: e.target.value }))} placeholder="e.g. Dr. Rajendra Patil" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Designation *</label><input type="text" required={!0} value={cmForm.designation} onChange={(e) => setCmForm((t) => ({ ...t, designation: e.target.value }))} placeholder="e.g. Chairman, PCZSC / Secretary" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">College / Institution Name</label><input type="text" value={cmForm.college_name} onChange={(e) => setCmForm((t) => ({ ...t, college_name: e.target.value }))} placeholder="e.g. Fergusson College, Pune" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">College Address</label><input type="text" value={cmForm.college_address} onChange={(e) => setCmForm((t) => ({ ...t, college_address: e.target.value }))} placeholder="e.g. FC Road, Shivajinagar, Pune - 411004" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Details</label><input type="text" value={cmForm.contact_details} onChange={(e) => setCmForm((t) => ({ ...t, contact_details: e.target.value }))} placeholder="e.g. +91 98765 43210 | email@example.com" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order</label><input type="number" min={0} value={cmForm.sort_order} onChange={(e) => setCmForm((t) => ({ ...t, sort_order: parseInt(e.target.value) || 0 }))} className="glass-input w-24" /><span className="text-[9px] text-slate-400">Lower number = appears first</span></div></div><div className="flex flex-col gap-3"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Photo URL</label><input type="text" value={cmForm.photo_url} onChange={(e) => setCmForm((t) => ({ ...t, photo_url: e.target.value }))} placeholder="https://... or leave blank to upload below" className="glass-input" /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl flex flex-col gap-3 items-center"><span className="text-[10px] text-slate-400 font-bold uppercase">Upload Photo</span><input type="file" accept="image/*" onChange={(e) => {let t=e.target.files?.[0];if(t){let e=new FileReader;e.onload=()=>setCmForm(t=>({...t,photo_url:e.result as string})),e.readAsDataURL(t)}}} className="glass-input text-[10px] file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer" /><div className="w-24 h-24 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900">{cmForm.photo_url ? <img src={cmForm.photo_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => {e.currentTarget.style.display=`none`}} /> : <User className="w-8 h-8 text-slate-300 dark:text-slate-600" />}</div><span className="text-[9px] text-slate-400 text-center">Photo will be converted to Base64 and stored.</span></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl flex flex-col gap-3 items-center"><span className="text-[10px] text-slate-400 font-bold uppercase">Upload Profile PDF</span><input type="file" accept="application/pdf" onChange={(e) => {let t=e.target.files?.[0];if(t){let e=new FileReader;e.onload=()=>setCmForm(n=>({...n,profile_pdf_url:e.result as string,profile_pdf_name:t.name})),e.readAsDataURL(t)}}} className="glass-input text-[10px] file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer" />{cmForm.profile_pdf_name && <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"><Check className="w-3.5 h-3.5" /> {cmForm.profile_pdf_name}<button type="button" onClick={() => setCmForm((e) => ({ ...e, profile_pdf_url: null, profile_pdf_name: null }))} className="text-rose-500 hover:text-rose-750 ml-1 font-bold cursor-pointer">Clear</button></div>}<span className="text-[9px] text-slate-400 text-center">PDF will be converted to Base64 and stored.</span></div></div></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md"><Save className="w-4 h-4 mr-2 inline-block" />{committeeEditId ? "Save Changes" : "Add Member"}</button></form><div><h3 className="text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-widest mb-3">Current Members ({allCommittee.length})</h3>{allCommittee.length === 0 ? <p className="text-slate-400 text-center py-8 text-sm">No committee members added yet.</p> : <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-3">#</th><th className="p-3">Photo</th><th className="p-3">Name / Role</th><th className="p-3">College</th><th className="p-3">Contact</th><th className="p-3">Profile</th><th className="p-3 text-center">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allCommittee.map((e, t) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors"><td className="p-3 text-slate-400 font-bold">{t + 1}</td><td className="p-3"><div className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0"><AdminCommitteeMemberPhoto src={e.photo_url} alt={e.name} /></div></td><td className="p-3"><p className="font-bold text-slate-800 dark:text-white">{e.name}</p><p className="text-[10px] text-primary font-semibold mt-0.5">{e.designation}</p></td><td className="p-3"><p className="font-semibold">{e.college_name || "—"}</p><p className="text-[10px] text-slate-400 mt-0.5">{e.college_address || ""}</p></td><td className="p-3 text-slate-500 max-w-[180px]"><span className="break-words">{e.contact_details || "—"}</span></td><td className="p-3">{e.profile_pdf_url ? <a href={e.profile_pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-bold bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all w-fit"><FileText className="w-3.5 h-3.5" /> PDF</a> : <span className="text-[9px] text-slate-400 italic">None</span>}</td><td className="p-3"><div className="flex items-center justify-center gap-2"><button onClick={() => handleCommitteeEdit(e)} className="p-2 rounded-xl bg-primary-light dark:bg-primary/10 hover:bg-primary hover:text-white text-primary transition-all" title="Edit Member"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => handleCommitteeDelete(e.id)} className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-all" title="Delete Member"><Trash2 className="w-3.5 h-3.5" /></button></div></td></tr>)}</tbody></table></div>}</div></div>
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><div><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><Users className="w-6 h-6 text-primary" /> Committee Manager</h2><p className="text-sm text-slate-500 mt-1">Add, edit, or remove committee members. Changes appear live on the public <strong>Committee</strong> page.</p></div>{cmSaved && <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3 text-xs flex items-center gap-2"><Check className="w-4 h-4" /> Committee member saved successfully!</div>}<form onSubmit={handleCommitteeSave} className="space-y-4 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl p-5 bg-slate-50/40 dark:bg-slate-950/20"><div className="flex items-center justify-between mb-1"><h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest">{committeeEditId ? "✏️ Edit Member" : "➕ Add New Member"}</h3>{committeeEditId && <button type="button" onClick={() => {setCommitteeEditId(null),setCmForm({name:``,designation:``,photo_url:``,college_name:``,college_address:``,contact_details:``,sort_order:0,profile_pdf_url:null,profile_pdf_name:null})}} className="text-[10px] font-bold text-rose-500 hover:text-rose-700 transition-colors">Cancel Edit</button>}</div><div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs"><div className="space-y-3"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name *</label><input type="text" required={!0} value={cmForm.name} onChange={(e) => setCmForm((t) => ({ ...t, name: e.target.value }))} placeholder="e.g. Dr. Rajendra Patil" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Designation *</label><input type="text" required={!0} value={cmForm.designation} onChange={(e) => setCmForm((t) => ({ ...t, designation: e.target.value }))} placeholder="e.g. Chairman / Secretary" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">College / Institution Name</label><input type="text" value={cmForm.college_name} onChange={(e) => setCmForm((t) => ({ ...t, college_name: e.target.value }))} placeholder="e.g. Fergusson College, Pune" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">College Address</label><input type="text" value={cmForm.college_address} onChange={(e) => setCmForm((t) => ({ ...t, college_address: e.target.value }))} placeholder="e.g. FC Road, Shivajinagar, Pune - 411004" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Details</label><input type="text" value={cmForm.contact_details} onChange={(e) => setCmForm((t) => ({ ...t, contact_details: e.target.value }))} placeholder="e.g. +91 98765 43210 | email@example.com" className="glass-input" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order</label><input type="number" min={0} value={cmForm.sort_order} onChange={(e) => setCmForm((t) => ({ ...t, sort_order: parseInt(e.target.value) || 0 }))} className="glass-input w-24" /><span className="text-[9px] text-slate-400">Lower number = appears first</span></div></div><div className="flex flex-col gap-3"><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Photo URL</label><input type="text" value={cmForm.photo_url} onChange={(e) => setCmForm((t) => ({ ...t, photo_url: e.target.value }))} placeholder="https://... or leave blank to upload below" className="glass-input" /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl flex flex-col gap-3 items-center"><span className="text-[10px] text-slate-400 font-bold uppercase">Upload Photo</span><input type="file" accept="image/*" onChange={(e) => {let t=e.target.files?.[0];if(t){let e=new FileReader;e.onload=()=>setCmForm(t=>({...t,photo_url:e.result as string})),e.readAsDataURL(t)}}} className="glass-input text-[10px] file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer" /><div className="w-24 h-24 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900">{cmForm.photo_url ? <img src={cmForm.photo_url} alt="Preview" className="w-full h-full object-cover" onError={(e) => {e.currentTarget.style.display=`none`}} /> : <User className="w-8 h-8 text-slate-300 dark:text-slate-600" />}</div><span className="text-[9px] text-slate-400 text-center">Photo will be converted to Base64 and stored.</span></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl flex flex-col gap-3 items-center"><span className="text-[10px] text-slate-400 font-bold uppercase">Upload Profile PDF</span><input type="file" accept="application/pdf" onChange={(e) => {let t=e.target.files?.[0];if(t){let e=new FileReader;e.onload=()=>setCmForm(n=>({...n,profile_pdf_url:e.result as string,profile_pdf_name:t.name})),e.readAsDataURL(t)}}} className="glass-input text-[10px] file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer" />{cmForm.profile_pdf_name && <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400"><Check className="w-3.5 h-3.5" /> {cmForm.profile_pdf_name}<button type="button" onClick={() => setCmForm((e) => ({ ...e, profile_pdf_url: null, profile_pdf_name: null }))} className="text-rose-500 hover:text-rose-750 ml-1 font-bold cursor-pointer">Clear</button></div>}<span className="text-[9px] text-slate-400 text-center">PDF will be converted to Base64 and stored.</span></div></div></div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md"><Save className="w-4 h-4 mr-2 inline-block" />{committeeEditId ? "Save Changes" : "Add Member"}</button></form><div><h3 className="text-xs font-extrabold text-slate-600 dark:text-slate-300 uppercase tracking-widest mb-3">Current Members ({allCommittee.length})</h3>{allCommittee.length === 0 ? <p className="text-slate-400 text-center py-8 text-sm">No committee members added yet.</p> : <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800"><table className="w-full text-left text-xs"><thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-slate-500 font-bold uppercase tracking-wider"><tr><th className="p-3">#</th><th className="p-3">Photo</th><th className="p-3">Name / Role</th><th className="p-3">College</th><th className="p-3">Contact</th><th className="p-3">Profile</th><th className="p-3 text-center">Actions</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">{allCommittee.map((e, t) => <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-950/20 transition-colors"><td className="p-3 text-slate-400 font-bold">{t + 1}</td><td className="p-3"><div className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0"><AdminCommitteeMemberPhoto src={e.photo_url} alt={e.name} /></div></td><td className="p-3"><p className="font-bold text-slate-800 dark:text-white">{e.name}</p><p className="text-[10px] text-primary font-semibold mt-0.5">{e.designation}</p></td><td className="p-3"><p className="font-semibold">{e.college_name || "—"}</p><p className="text-[10px] text-slate-400 mt-0.5">{e.college_address || ""}</p></td><td className="p-3 text-slate-500 max-w-[180px]"><span className="break-words">{e.contact_details || "—"}</span></td><td className="p-3">{e.profile_pdf_url ? <a href={e.profile_pdf_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[9px] font-bold bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all w-fit"><FileText className="w-3.5 h-3.5" /> PDF</a> : <span className="text-[9px] text-slate-400 italic">None</span>}</td><td className="p-3"><div className="flex items-center justify-center gap-2"><button onClick={() => handleCommitteeEdit(e)} className="p-2 rounded-xl bg-primary-light dark:bg-primary/10 hover:bg-primary hover:text-white text-primary transition-all" title="Edit Member"><Edit3 className="w-3.5 h-3.5" /></button><button onClick={() => handleCommitteeDelete(e.id)} className="p-2 rounded-xl bg-rose-50 dark:bg-rose-900/10 hover:bg-rose-500 hover:text-white text-rose-500 transition-all" title="Delete Member"><Trash2 className="w-3.5 h-3.5" /></button></div></td></tr>)}</tbody></table></div>}</div></div>
         )}
 
         {/* ── DIRECTORS-MANAGER TAB ── */}
@@ -3430,6 +3644,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         {/* ── NCTE-MANAGER TAB ── */}
         {activeSubTab === 'ncte-manager' && (
           <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6"><h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2"><ShieldCheck className="w-6 h-6 text-primary" /> Manage NCTE Disclosures</h2><p className="text-sm text-slate-500">Publish official NCTE disclosures, compliance reports, and regulatory PDF certificates which appear dynamically in the public NCTE Mandatory Disclosures subpage.</p>{ncteCreated && <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">NCTE disclosure published successfully to Mandatory Disclosures feed!</div>}<form onSubmit={handleCreateNcte} className="space-y-4 text-xs"><div className="grid grid-cols-1 sm:grid-cols-3 gap-4"><div className="flex flex-col gap-1.5 sm:col-span-2"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Disclosure Title</label><input type="text" required={!0} value={ncteTitle} onChange={(e) => setNcteTitle(e.target.value)} placeholder="e.g. NCTE Mandatory Disclosure Report 2026" className="glass-input font-semibold" /></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Publish Date</label><input type="date" required={!0} value={ncteDate} onChange={(e) => setNcteDate(e.target.value)} className="glass-input" /></div></div><div className="flex flex-col gap-1.5"><label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description Overview</label><RichTextEditor value={ncteDesc} onChange={setNcteDesc} placeholder="Summarize the compliance document, order number, or certification details..." /></div><div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex items-center justify-between gap-4"><div className="space-y-1 text-left"><h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4><p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p><input type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg" onChange={handleNcteFileUpload} className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full" /></div>{ncteFileName && <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm"><ShieldCheck className="w-4 h-4 text-primary shrink-0" /><span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{ncteFileName}</span><button type="button" onClick={() => {setNcteFileUrl(null),setNcteFileName(null)}} className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1">Clear</button></div>}</div><button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">Publish NCTE Disclosure</button></form><div className="border-t border-slate-100 dark:border-slate-800 my-6 pt-6"><h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Active NCTE Disclosures</h3>{allNcte.length > 0 ? <div className="space-y-2">{allNcte.map((e) => <div className="group flex items-start gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all"><div className="shrink-0 w-9 h-9 rounded-xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs mt-0.5"><ShieldCheck className="w-5 h-5 text-primary" /></div><div className="flex-1 min-w-0"><div className="flex flex-wrap items-center gap-2 mb-1"><span className="text-[10px] text-slate-400 font-semibold">{e.date}</span></div><p className="font-bold text-xs text-slate-800 dark:text-white truncate">{e.title}</p>{e.description && <p className="text-[10px] text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">{e.description}</p>}{e.file_name && <div className="flex items-center gap-1 mt-1.5"><ShieldCheck className="w-3 h-3 text-primary" /><a href={e.file_url} download={e.file_name} className="text-[10px] font-semibold text-primary hover:underline truncate">{e.file_name}</a></div>}</div><button onClick={() => handleDeleteNcte(e.id)} className="shrink-0 p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-all cursor-pointer opacity-0 group-hover:opacity-100" title="Delete"><Trash2 className="w-4 h-4" /></button></div>)}</div> : <p className="text-slate-400 text-center py-8 text-xs">No disclosures published yet. Add one above.</p>}</div></div>
+        )}
+
+        {/* ── MENU-MANAGER TAB ── */}
+        {activeSubTab === 'menu-manager' && (
+          <MenuNavigationManager
+            allPages={allAboutPages}
+            onRefresh={fetchData}
+            setConfirmDialog={setConfirmDialog}
+          />
         )}
 
         {/* ── ABOUT-MANAGER TAB ── */}
@@ -4856,7 +5079,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                       className="w-4 h-4 rounded text-primary focus:ring-primary/30 accent-primary cursor-pointer"
                     />
                     <label htmlFor="showMainHeader" className="font-bold text-slate-700 dark:text-slate-250 cursor-pointer select-none text-[11px]">
-                      Enable Main Logo & Accreditation Header Row (Tier 2 like IARE)
+                      Enable Main Logo & Accreditation Header Row (Tier 2 Layout)
                     </label>
                   </div>
                 </div>
@@ -5121,7 +5344,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
               <div className="space-y-6">
                 <div>
                   <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                    <SlidersHorizontal className="w-5 h-5 text-primary" /> Customizable Top Header Bar (Like IARE)
+                    <SlidersHorizontal className="w-5 h-5 text-primary" /> Customizable Top Header Bar
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-1">Configure the visibility, contact details, socials, background, and quick link portals in the top utility bar.</p>
                 </div>

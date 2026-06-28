@@ -47,7 +47,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
   const [openSubDropdownId, setOpenSubDropdownId] = useState<string | null>(null);
   const [mobileCustomDropdownId, setMobileCustomDropdownId] = useState<string | null>(null);
   const [mobileSubDropdownId, setMobileSubDropdownId] = useState<string | null>(null);
-
   const [customPages, setCustomPages] = useState<any[]>([]);
 
   useEffect(() => {
@@ -55,78 +54,75 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
       .then(res => res.ok ? res.json() : [])
       .then(data => setCustomPages(data))
       .catch(err => console.warn('Navbar failed to fetch custom pages:', err));
-  }, [currentTab, aboutOpen, academicOpen, studentCornerOpen, mobileAboutOpen, mobileAcademicOpen, mobileStudentCornerOpen]);
+  }, [currentTab]);
 
-  const baseAboutSubpages = [
-    { id: 'about_us', label: 'About Us', icon: Info, badge: 'Organisation' },
-    { id: 'committee', label: 'Committee', icon: Users, badge: 'Governance' },
-    { id: 'hods', label: 'From HODs/Directors Desk', icon: Home, badge: 'Leadership' },
-    { id: 'director', label: 'Director of Phy. Edu.', icon: Activity, badge: 'Leadership' },
-    { id: 'circulars', label: 'Circulars', icon: FileText, badge: 'Notices' },
-    { id: 'ncte', label: 'NCTE Mandatory Disclosures', icon: ShieldCheck, badge: 'Regulatory' },
-    { id: 'facilities', label: 'Facilities', icon: Building2, badge: 'Infrastructure' },
-  ];
+  // Icon lookup for standard menus
+  const iconLookup: Record<string, React.ComponentType<any>> = {
+    about_us: Info,
+    committee: Users,
+    hods: Home,
+    director: Activity,
+    circulars: FileText,
+    ncte: ShieldCheck,
+    facilities: Building2,
+    courses: BookOpen,
+    admission: UserCheck,
+    syllabus: FileSpreadsheet,
+    academic_results: Trophy,
+    events: CalendarDays,
+    stories: Newspaper,
+    careers: Briefcase,
+    activities: Activity,
+    research: FlaskConical,
+    projects: FolderOpen,
+    calendar: CalendarDays,
+    souvenirs: Star,
+    draws: FileText,
+    results: Trophy
+  };
 
-  const baseAcademicSubpages = [
-    { id: 'courses', label: 'Academic Courses', icon: BookOpen, badge: 'Programs' },
-    { id: 'admission', label: 'Admissions Notice', icon: UserCheck, badge: 'Enrollment' },
-    { id: 'syllabus', label: 'Curriculum Syllabus', icon: FileSpreadsheet, badge: 'Curriculum' },
-    { id: 'academic_results', label: 'Academic Results', icon: Trophy, badge: 'Academic' },
-  ];
+  const level1Items = customPages
+    .filter(p => p.is_visible !== 0 && (p.menu_type === 'parent' || p.menu_type === 'standalone'))
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
-  const baseStudentCornerSubpages = [
-    { id: 'events', label: 'Events', icon: CalendarDays, badge: 'Activities' },
-    { id: 'stories', label: 'Stories', icon: Newspaper, badge: 'Alumni' },
-    { id: 'careers', label: 'Careers', icon: Briefcase, badge: 'Jobs' },
-    { id: 'activities', label: 'Activities', icon: Activity, badge: 'Campus' },
-    { id: 'research', label: 'Research', icon: FlaskConical, badge: 'Academic' },
-    { id: 'projects', label: 'Projects', icon: FolderOpen, badge: 'Student' },
-    { id: 'calendar', label: 'Sports Calendar', icon: CalendarDays, badge: 'Schedule' },
-    { id: 'souvenirs', label: 'Souvenirs', icon: Star, badge: 'Publications' },
-    { id: 'draws', label: 'Draws', icon: FileText, badge: 'Draws' },
-    { id: 'results', label: 'Results', icon: Trophy, badge: 'Results' },
-  ];
+  const getDropdownChildren = (parentId: string) => {
+    return customPages
+      .filter(p => p.is_visible !== 0 && (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === parentId)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  };
 
-  const dynamicAbout = customPages
-    .filter(p => p.is_visible !== 0 && p.menu_type === 'child' && p.parent_menu === 'about' && !baseAboutSubpages.some(sp => sp.id === p.id))
-    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
+  const getSubChildren = (childId: string) => {
+    return customPages
+      .filter(p => p.is_visible !== 0 && p.menu_type === 'sub-child' && p.parent_menu === childId)
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+  };
 
-  const dynamicAcademic = customPages
-    .filter(p => p.is_visible !== 0 && p.menu_type === 'child' && p.parent_menu === 'academic' && !baseAcademicSubpages.some(sp => sp.id === p.id))
-    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
-
-  const dynamicStudent = customPages
-    .filter(p => p.is_visible !== 0 && p.menu_type === 'child' && p.parent_menu === 'student' && !baseStudentCornerSubpages.some(sp => sp.id === p.id))
-    .map(p => ({ id: p.id, label: p.title, icon: FileText, badge: 'Custom' }));
-
-  const dynamicStandalone = customPages
-    .filter(p => p.is_visible !== 0 && p.menu_type === 'standalone');
-
-  const aboutSubpages = [...baseAboutSubpages, ...dynamicAbout];
-  const academicSubpages = [...baseAcademicSubpages, ...dynamicAcademic];
-  const studentCornerSubpages = [...baseStudentCornerSubpages, ...dynamicStudent];
-
-  // Reset logo error state when logo URL changes (e.g. after admin updates it)
-  useEffect(() => {
-    setLogoImgError(false);
-  }, [settings.logo_url]);
+  const navigateToMenu = (item: any) => {
+    if (item.menu_type === 'standalone') {
+      setCurrentTab(item.id);
+    } else if (item.parent_menu === 'about') {
+      setCurrentTab(`about-${item.id}`);
+    } else if (item.parent_menu === 'academic') {
+      setCurrentTab(`academic-${item.id}`);
+    } else if (item.parent_menu === 'student') {
+      if (item.id === 'events') setCurrentTab('events');
+      else if (item.id === 'stories') setCurrentTab('stories');
+      else if (item.id === 'careers') setCurrentTab('jobs');
+      else setCurrentTab(`student-${item.id}`);
+    } else {
+      if (item.menu_type === 'sub-child') {
+        const childItem = customPages.find(p => p.id === item.parent_menu);
+        const parentId = childItem ? childItem.parent_menu : 'unknown';
+        setCurrentTab(`custmenu__${parentId}__${childItem?.id}__${item.id}`);
+      } else {
+        setCurrentTab(`custmenu__${item.parent_menu}__${item.id}`);
+      }
+    }
+  };
 
   // Close dropdown when clicking outside
-  const aboutRef = useRef<HTMLDivElement>(null);
-  const academicRef = useRef<HTMLDivElement>(null);
-  const studentCornerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (aboutRef.current && !aboutRef.current.contains(e.target as Node)) {
-        setAboutOpen(false);
-      }
-      if (academicRef.current && !academicRef.current.contains(e.target as Node)) {
-        setAcademicOpen(false);
-      }
-      if (studentCornerRef.current && !studentCornerRef.current.contains(e.target as Node)) {
-        setStudentCornerOpen(false);
-      }
       const clickedInside = (e.target as HTMLElement).closest('.custom-dropdown-container');
       if (!clickedInside) {
         setOpenCustomDropdownId(null);
@@ -137,19 +133,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const baseNavLinks = [
-    { id: 'directory', label: 'Alumni' },
-    { id: 'gallery', label: 'Gallery' },
-    { id: 'placements', label: 'Placements' },
-    { id: 'donations', label: 'Donations' },
-    { id: 'contact', label: 'Contact' }
-  ];
-
-  const navLinks = [
-    ...baseNavLinks,
-    ...dynamicStandalone.map(dl => ({ id: `about-${dl.id}`, label: dl.title }))
-  ];
-
   const handleRoleSwitch = (role: 'student' | 'alumni' | 'admin' | null) => {
     setShowRoleSelector(false);
     if (role === null) {
@@ -158,7 +141,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
       return;
     }
 
-    // Mock Login trigger (bypasses UI for quick testing, but individual login pages exist!)
     const mockUsers = {
       student: { id: 6, role: 'student', email: 'student.bob@apex.edu', full_name: 'Bob Johnson', status: 'approved' },
       alumni: { id: 2, role: 'alumni', email: 'john.doe@gmail.com', full_name: 'John Doe', status: 'approved' },
@@ -237,7 +219,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
         </div>
       )}
 
-      {/* Tier 2: Main Branding Header Row (Logo, University Title, Accreditations like IARE) */}
+      {/* Tier 2: Main Branding Header Row (Logo, University Title, Accreditations) */}
       {settings.show_main_header === 1 && (
         <div className="bg-white dark:bg-slate-950 border-b border-slate-200/60 dark:border-slate-800/60 py-4 sm:py-5">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -262,16 +244,16 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                 )}
               </div>
               <div className="flex flex-col">
-                <h1 className="font-black text-2xl sm:text-3xl tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-primary dark:from-white dark:via-slate-200 dark:to-primary bg-clip-text text-transparent group-hover:text-primary transition-colors">
+                <h1 className="font-black text-lg sm:text-xl md:text-2xl tracking-tight bg-gradient-to-r from-slate-900 via-slate-800 to-primary dark:from-white dark:via-slate-200 dark:to-primary bg-clip-text text-transparent group-hover:text-primary transition-colors">
                   {settings.univ_name}
                 </h1>
-                <p className="text-xs sm:text-sm font-semibold text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide flex items-center gap-1.5 flex-wrap">
+                <p className="text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5 tracking-wide flex items-center gap-1.5 flex-wrap">
                   <span>{settings.univ_tagline || 'Autonomous Institution | Approved by AICTE | Permanently Affiliated'}</span>
                 </p>
               </div>
             </div>
 
-            {/* Right: Accreditation & Recognition Badges (IARE style) */}
+            {/* Right: Accreditation & Recognition Badges */}
             <div className="flex items-center gap-3 sm:gap-4 flex-wrap justify-center md:justify-end shrink-0">
               {accreditations.map((badge) => {
                 const styles = {
@@ -331,7 +313,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                 ) : (
                   <GraduationCap className="w-10 h-10 text-primary" />
                 )}
-                <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <span className="font-extrabold text-base tracking-tight bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   {settings.univ_name}
                 </span>
               </div>
@@ -354,323 +336,153 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                 Home
               </button>
 
-              {/* About Dropdown */}
-              <div className="relative" ref={aboutRef}>
-                <button
-                  onClick={() => {
-                    setAboutOpen(!aboutOpen);
-                    setAcademicOpen(false);
-                    setStudentCornerOpen(false);
-                  }}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${currentTab.startsWith('about-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  <span>About</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${aboutOpen ? 'rotate-180' : ''}`} />
-                </button>
+              {/* Dynamic Level-1 Top Items */}
+              {level1Items.map((item) => {
+                if (item.menu_type === 'parent') {
+                  const isDropdownOpen = openCustomDropdownId === item.id;
+                  const children = getDropdownChildren(item.id);
+                  const isActive = currentTab.startsWith(`custmenu__${item.id}__`) || 
+                    (item.id === 'about' && currentTab.startsWith('about-')) ||
+                    (item.id === 'academic' && currentTab.startsWith('academic-')) ||
+                    (item.id === 'student' && (currentTab.startsWith('student-') || currentTab === 'events' || currentTab === 'stories' || currentTab === 'jobs'));
+                  
+                  return (
+                    <div key={item.id} className="relative custom-dropdown-container">
+                      <button
+                        onClick={() => {
+                          setOpenCustomDropdownId(isDropdownOpen ? null : item.id);
+                          setOpenSubDropdownId(null);
+                        }}
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${isActive
+                            ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
+                            : 'text-slate-605 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
+                          }`}
+                      >
+                        <span>{item.title}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                {aboutOpen && (
-                  <div className="absolute left-0 mt-2 w-72 rounded-2xl overflow-hidden z-50 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
-                    <div className="px-4 py-3 bg-secondary text-white">
-                      <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">About PCZSC</p>
-                      <p className="text-xs font-bold text-white mt-0.5">Select a Section</p>
-                    </div>
-                    <div className="p-2 space-y-0.5">
-                      {aboutSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `about-${sub.id}`;
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              setCurrentTab(`about-${sub.id}`);
-                              setAboutOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${isActive
-                                ? 'bg-primary text-white font-bold shadow-sm'
-                                : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
-                              }`}
-                          >
-                            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive
-                                ? 'bg-white/20'
-                                : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'
-                              }`}>
-                              <SubIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                            </span>
-                            <span className="flex-1 text-left leading-tight">{sub.label}</span>
-                            {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                      {isDropdownOpen && (
+                        <div className="absolute left-0 mt-2 w-64 rounded-2xl overflow-visible z-50 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
+                          <div className="px-4 py-3 bg-secondary text-white rounded-t-2xl">
+                            <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">{item.title}</p>
+                            <p className="text-xs font-bold text-white mt-0.5">Select a Section</p>
+                          </div>
+                          <div className="p-2 space-y-0.5 max-h-[70vh] overflow-y-auto">
+                            {children.length === 0 ? (
+                              <p className="text-[11px] text-slate-400 italic p-3 text-center">No subpages created.</p>
+                            ) : (
+                              children.map((child) => {
+                                const isChildActive = currentTab.startsWith(`custmenu__${item.id}__${child.id}`) ||
+                                  (item.id === 'about' && currentTab === `about-${child.id}`) ||
+                                  (item.id === 'academic' && currentTab === `academic-${child.id}`) ||
+                                  (item.id === 'student' && (
+                                    currentTab === `student-${child.id}` ||
+                                    (child.id === 'events' && currentTab === 'events') ||
+                                    (child.id === 'stories' && currentTab === 'stories') ||
+                                    (child.id === 'careers' && currentTab === 'jobs')
+                                  ));
 
-              {/* Academic Dropdown */}
-              <div className="relative" ref={academicRef}>
-                <button
-                  onClick={() => {
-                    setAcademicOpen(!academicOpen);
-                    setAboutOpen(false);
-                    setStudentCornerOpen(false);
-                  }}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${currentTab.startsWith('academic-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  <span>Academic</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${academicOpen ? 'rotate-180' : ''}`} />
-                </button>
+                                const subChildren = getSubChildren(child.id);
+                                const hasSubChildren = subChildren.length > 0;
+                                const isSubOpen = openSubDropdownId === child.id;
+                                const SubIcon = iconLookup[child.id] || FileText;
 
-                {academicOpen && (
-                  <div className="absolute left-0 mt-2 w-64 rounded-2xl overflow-hidden z-50 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
-                    <div className="px-4 py-3 bg-secondary text-white">
-                      <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">UNIPUNEDPE Academic</p>
-                      <p className="text-xs font-bold text-white mt-0.5">Select a Section</p>
-                    </div>
-                    <div className="p-2 space-y-0.5">
-                      {academicSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `academic-${sub.id}`;
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              setCurrentTab(`academic-${sub.id}`);
-                              setAcademicOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${isActive
-                                ? 'bg-primary text-white font-bold shadow-sm'
-                                : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
-                              }`}
-                          >
-                            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive
-                                ? 'bg-white/20'
-                                : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'
-                              }`}>
-                              <SubIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                            </span>
-                            <span className="flex-1 text-left leading-tight">{sub.label}</span>
-                            {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                                return (
+                                  <div key={child.id} className="relative">
+                                    <button
+                                      onClick={() => {
+                                        if (hasSubChildren) {
+                                          setOpenSubDropdownId(isSubOpen ? null : child.id);
+                                        } else {
+                                          navigateToMenu(child);
+                                          setOpenCustomDropdownId(null);
+                                          setOpenSubDropdownId(null);
+                                        }
+                                      }}
+                                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group cursor-pointer ${isChildActive
+                                          ? 'bg-primary text-white font-bold shadow-sm'
+                                          : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
+                                        }`}
+                                    >
+                                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isChildActive
+                                          ? 'bg-white/20'
+                                          : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'
+                                        }`}>
+                                        <SubIcon className={`w-4 h-4 ${isChildActive ? 'text-white' : 'text-slate-500 dark:text-slate-450 group-hover:text-primary'}`} />
+                                      </span>
+                                      <span className="flex-1 text-left leading-tight">{child.title}</span>
+                                      {hasSubChildren ? (
+                                        <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isSubOpen ? 'rotate-90' : ''} ${isChildActive ? 'text-white/70' : 'text-slate-400 group-hover:text-primary'}`} />
+                                      ) : (
+                                        isChildActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
+                                      )}
+                                    </button>
 
-              {/* Student Corner Dropdown */}
-              <div className="relative" ref={studentCornerRef}>
-                <button
-                  onClick={() => {
-                    setStudentCornerOpen(!studentCornerOpen);
-                    setAboutOpen(false);
-                    setAcademicOpen(false);
-                  }}
-                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${currentTab.startsWith('student-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  <span>Student Corner</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${studentCornerOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {studentCornerOpen && (
-                  <div className="absolute left-0 mt-2 w-64 rounded-2xl overflow-hidden z-50 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50 max-h-[80vh] overflow-y-auto">
-                    <div className="px-4 py-3 bg-secondary text-white sticky top-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">Student Corner</p>
-                      <p className="text-xs font-bold text-white mt-0.5">Campus Life & Activities</p>
+                                    {/* Level-3 Sub-dropdown (fly-out to the right) */}
+                                    {hasSubChildren && isSubOpen && (
+                                      <div className="absolute left-full top-0 ml-1.5 w-56 rounded-2xl overflow-hidden z-[60] bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
+                                        <div className="px-3 py-2 bg-gradient-to-r from-primary to-secondary">
+                                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/60">{child.title}</p>
+                                          <p className="text-[11px] font-bold text-white">Sub-sections</p>
+                                        </div>
+                                        <div className="p-1.5 space-y-0.5">
+                                          {subChildren.map(sub => {
+                                            const isSubActive = currentTab === `custmenu__${item.id}__${child.id}__${sub.id}`;
+                                            return (
+                                              <button
+                                                key={sub.id}
+                                                onClick={() => {
+                                                  navigateToMenu(sub);
+                                                  setOpenCustomDropdownId(null);
+                                                  setOpenSubDropdownId(null);
+                                                }}
+                                                className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all group cursor-pointer ${isSubActive
+                                                    ? 'bg-primary text-white font-bold shadow-sm'
+                                                    : 'text-slate-700 dark:text-slate-205 hover:bg-primary/10 hover:text-primary font-semibold'
+                                                  }`}
+                                              >
+                                                <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isSubActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
+                                                  <ChevronRight className={`w-3.5 h-3.5 ${isSubActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}`} />
+                                                </span>
+                                                <span className="flex-1 text-left leading-tight text-xs">{sub.title}</span>
+                                                {isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="p-2 space-y-0.5">
-                      {studentCornerSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `student-${sub.id}` || 
-                          (sub.id === 'events' && currentTab === 'events') ||
-                          (sub.id === 'stories' && currentTab === 'stories') ||
-                          (sub.id === 'careers' && currentTab === 'jobs');
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              if (sub.id === 'events') {
-                                setCurrentTab('events');
-                              } else if (sub.id === 'stories') {
-                                setCurrentTab('stories');
-                              } else if (sub.id === 'careers') {
-                                setCurrentTab('jobs');
-                              } else {
-                                setCurrentTab(`student-${sub.id}`);
-                              }
-                              setStudentCornerOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${isActive
-                                ? 'bg-primary text-white font-bold shadow-sm'
-                                : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
-                              }`}
-                          >
-                            <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive
-                                ? 'bg-white/20'
-                                : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'
-                              }`}>
-                              <SubIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                            </span>
-                            <span className="flex-1 text-left leading-tight">{sub.label}</span>
-                            {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Custom Dropdown Menus — 3 levels */}
-              {customPages.filter(p => p.menu_type === 'parent').map((parent) => {
-                const isOpen = openCustomDropdownId === parent.id;
-                // Level-2: children that belong to this parent
-                const children = customPages.filter(p =>
-                  (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === parent.id
-                );
-                const isActive = currentTab.startsWith(`custmenu__${parent.id}__`);
-                return (
-                  <div key={parent.id} className="relative custom-dropdown-container">
+                  );
+                } else {
+                  // Standalone link
+                  const isActive = currentTab === item.id;
+                  return (
                     <button
+                      key={item.id}
                       onClick={() => {
-                        setOpenCustomDropdownId(isOpen ? null : parent.id);
+                        navigateToMenu(item);
+                        setOpenCustomDropdownId(null);
                         setOpenSubDropdownId(null);
-                        setAboutOpen(false);
-                        setAcademicOpen(false);
-                        setStudentCornerOpen(false);
                       }}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${isActive
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${isActive
                           ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
                           : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
                         }`}
                     >
-                      <span>{parent.title}</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                      {item.title}
                     </button>
-
-                    {isOpen && (
-                      <div className="absolute left-0 mt-2 w-64 rounded-2xl overflow-visible z-50 bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
-                        <div className="px-4 py-3 bg-secondary text-white rounded-t-2xl">
-                          <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">{parent.title}</p>
-                          <p className="text-xs font-bold text-white mt-0.5">Select a Section</p>
-                        </div>
-                        <div className="p-2 space-y-0.5">
-                          {children.length === 0 ? (
-                            <p className="text-[11px] text-slate-400 italic p-3 text-center">No subpages created.</p>
-                          ) : (
-                            children.map((child) => {
-                              const isChildActive = currentTab.startsWith(`custmenu__${parent.id}__${child.id}`);
-                              // Level-3: sub-children under this child
-                              const subChildren = customPages.filter(p =>
-                                p.menu_type === 'sub-child' && p.parent_menu === child.id
-                              );
-                              const hasSubChildren = subChildren.length > 0;
-                              const isSubOpen = openSubDropdownId === child.id;
-
-                              return (
-                                <div key={child.id} className="relative">
-                                  <button
-                                    onClick={() => {
-                                      if (hasSubChildren) {
-                                        setOpenSubDropdownId(isSubOpen ? null : child.id);
-                                      } else {
-                                        setCurrentTab(`custmenu__${parent.id}__${child.id}`);
-                                        setOpenCustomDropdownId(null);
-                                        setOpenSubDropdownId(null);
-                                      }
-                                    }}
-                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all group ${isChildActive
-                                        ? 'bg-primary text-white font-bold shadow-sm'
-                                        : 'text-slate-750 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
-                                      }`}
-                                  >
-                                    <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isChildActive
-                                        ? 'bg-white/20'
-                                        : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'
-                                      }`}>
-                                      <FileText className={`w-4 h-4 ${isChildActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                                    </span>
-                                    <span className="flex-1 text-left leading-tight">{child.title}</span>
-                                    {hasSubChildren ? (
-                                      <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${isSubOpen ? 'rotate-90' : ''} ${isChildActive ? 'text-white/70' : 'text-slate-400 group-hover:text-primary'}`} />
-                                    ) : (
-                                      isChildActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />
-                                    )}
-                                  </button>
-
-                                  {/* Level-3 Sub-dropdown (fly-out to the right) */}
-                                  {hasSubChildren && isSubOpen && (
-                                    <div className="absolute left-full top-0 ml-1.5 w-56 rounded-2xl overflow-hidden z-[60] bg-white dark:bg-slate-900 shadow-2xl border border-slate-200/60 dark:border-slate-700/50">
-                                      <div className="px-3 py-2 bg-gradient-to-r from-primary to-secondary">
-                                        <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/60">{child.title}</p>
-                                        <p className="text-[11px] font-bold text-white">Sub-sections</p>
-                                      </div>
-                                      <div className="p-1.5 space-y-0.5">
-                                        {subChildren.map(sub => {
-                                          const isSubActive = currentTab === `custmenu__${parent.id}__${child.id}__${sub.id}`;
-                                          return (
-                                            <button
-                                              key={sub.id}
-                                              onClick={() => {
-                                                setCurrentTab(`custmenu__${parent.id}__${child.id}__${sub.id}`);
-                                                setOpenCustomDropdownId(null);
-                                                setOpenSubDropdownId(null);
-                                              }}
-                                              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all group ${isSubActive
-                                                  ? 'bg-primary text-white font-bold shadow-sm'
-                                                  : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
-                                                }`}
-                                            >
-                                              <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isSubActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
-                                                <ChevronRight className={`w-3.5 h-3.5 ${isSubActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'}`} />
-                                              </span>
-                                              <span className="flex-1 text-left leading-tight text-xs">{sub.title}</span>
-                                              {isSubActive && <span className="w-1.5 h-1.5 rounded-full bg-white/80 shrink-0" />}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
+                  );
+                }
               })}
-
-
-              {/* Top-level nav links: Alumni, Donations, Contact */}
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => {
-                    setCurrentTab(link.id);
-                    setIsOpen(false);
-                    setAboutOpen(false);
-                    setStudentCornerOpen(false);
-                  }}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all ${currentTab === link.id
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100/50 dark:hover:bg-slate-800/30'
-                    }`}
-                >
-                  {link.label}
-                </button>
-              ))}
             </div>
             {/* Actions & Profile Dropdown */}
             <div className="hidden lg:flex items-center gap-4">
@@ -809,268 +621,136 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                 Home
               </button>
 
-              {/* About Subpages Collapsible */}
-              <div>
-                <button
-                  onClick={() => setMobileAboutOpen(!mobileAboutOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all ${currentTab.startsWith('about-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <span>About</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileAboutOpen ? 'rotate-180' : ''}`} />
-                </button>
+              {/* Dynamic Level-1 Top Items (Mobile) */}
+              {level1Items.map((item) => {
+                if (item.menu_type === 'parent') {
+                  const isMobileOpen = mobileCustomDropdownId === item.id;
+                  const children = getDropdownChildren(item.id);
+                  const isActive = currentTab.startsWith(`custmenu__${item.id}__`) || 
+                    (item.id === 'about' && currentTab.startsWith('about-')) ||
+                    (item.id === 'academic' && currentTab.startsWith('academic-')) ||
+                    (item.id === 'student' && (currentTab.startsWith('student-') || currentTab === 'events' || currentTab === 'stories' || currentTab === 'jobs'));
+                  
+                  return (
+                    <div key={item.id}>
+                      <button
+                        onClick={() => {
+                          setMobileCustomDropdownId(isMobileOpen ? null : item.id);
+                          setMobileSubDropdownId(null);
+                        }}
+                        className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all cursor-pointer ${isActive
+                            ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
+                            : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                      >
+                        <span>{item.title}</span>
+                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                {mobileAboutOpen && (
-                  <div className="mx-2 mb-1 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/40">
-                    <div className="px-4 py-2 bg-secondary">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Sections</p>
-                    </div>
-                    <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
-                      {aboutSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `about-${sub.id}`;
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              setCurrentTab(`about-${sub.id}`);
-                              setIsOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
-                                ? 'bg-primary text-white'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800'
-                              }`}
-                          >
-                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                              <SubIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                            </span>
-                            {sub.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                      {isMobileOpen && (
+                        <div className="mx-2 mb-1 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/40">
+                          <div className="px-4 py-2 bg-secondary">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">{item.title}</p>
+                          </div>
+                          <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
+                            {children.length === 0 ? (
+                              <p className="text-[11px] text-slate-400 italic p-3 text-center">No subpages created.</p>
+                            ) : (
+                              children.map((child) => {
+                                const isChildActive = currentTab.startsWith(`custmenu__${item.id}__${child.id}`) ||
+                                  (item.id === 'about' && currentTab === `about-${child.id}`) ||
+                                  (item.id === 'academic' && currentTab === `academic-${child.id}`) ||
+                                  (item.id === 'student' && (
+                                    currentTab === `student-${child.id}` ||
+                                    (child.id === 'events' && currentTab === 'events') ||
+                                    (child.id === 'stories' && currentTab === 'stories') ||
+                                    (child.id === 'careers' && currentTab === 'jobs')
+                                  ));
 
-              {/* Academic Subpages Collapsible */}
-              <div>
-                <button
-                  onClick={() => setMobileAcademicOpen(!mobileAcademicOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all ${currentTab.startsWith('academic-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <span>Academic</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileAcademicOpen ? 'rotate-180' : ''}`} />
-                </button>
+                                const subChildren = getSubChildren(child.id);
+                                const hasSubChildren = subChildren.length > 0;
+                                const isMobileSubOpen = mobileSubDropdownId === child.id;
+                                const SubIcon = iconLookup[child.id] || FileText;
 
-                {mobileAcademicOpen && (
-                  <div className="mx-2 mb-1 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/40">
-                    <div className="px-4 py-2 bg-secondary">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Academics</p>
-                    </div>
-                    <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
-                      {academicSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `academic-${sub.id}`;
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              setCurrentTab(`academic-${sub.id}`);
-                              setIsOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
-                                ? 'bg-primary text-white'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800'
-                              }`}
-                          >
-                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                              <SubIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                            </span>
-                            {sub.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+                                return (
+                                  <div key={child.id}>
+                                    <button
+                                      onClick={() => {
+                                        if (hasSubChildren) {
+                                          setMobileSubDropdownId(isMobileSubOpen ? null : child.id);
+                                        } else {
+                                          navigateToMenu(child);
+                                          setIsOpen(false);
+                                        }
+                                      }}
+                                      className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all cursor-pointer ${isChildActive
+                                          ? 'bg-primary text-white'
+                                          : 'text-slate-600 dark:text-slate-450 hover:text-primary hover:bg-white dark:hover:bg-slate-800'
+                                        }`}
+                                    >
+                                      <div className="flex items-center gap-2.5 min-w-0 bg-transparent">
+                                        <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isChildActive ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
+                                          <SubIcon className={`w-3.5 h-3.5 ${isChildActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
+                                        </span>
+                                        <span className="truncate">{child.title}</span>
+                                      </div>
+                                      {hasSubChildren && (
+                                        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isMobileSubOpen ? 'rotate-180' : ''} ${isChildActive ? 'text-white/70' : 'text-slate-400'}`} />
+                                      )}
+                                    </button>
 
-              {/* Student Corner Collapsible */}
-              <div>
-                <button
-                  onClick={() => setMobileStudentCornerOpen(!mobileStudentCornerOpen)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all ${currentTab.startsWith('student-')
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  <span>Student Corner</span>
-                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${mobileStudentCornerOpen ? 'rotate-180' : ''}`} />
-                </button>
-
-                {mobileStudentCornerOpen && (
-                  <div className="mx-2 mb-1 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/40">
-                    <div className="px-4 py-2 bg-secondary">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">Campus Life & Activities</p>
+                                    {hasSubChildren && isMobileSubOpen && (
+                                      <div className="ml-4 mt-0.5 mb-0.5 border-l-2 border-primary/20 pl-3 space-y-0.5">
+                                        {subChildren.map(sub => {
+                                          const isSubActive = currentTab === `custmenu__${item.id}__${child.id}__${sub.id}`;
+                                          return (
+                                            <button
+                                              key={sub.id}
+                                              onClick={() => {
+                                                navigateToMenu(sub);
+                                                setIsOpen(false);
+                                              }}
+                                              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${isSubActive
+                                                  ? 'bg-primary text-white'
+                                                  : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10'
+                                                }`}
+                                            >
+                                              <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
+                                              <span className="truncate">{sub.title}</span>
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
-                      {studentCornerSubpages.map((sub) => {
-                        const SubIcon = sub.icon;
-                        const isActive = currentTab === `student-${sub.id}` || 
-                          (sub.id === 'events' && currentTab === 'events') ||
-                          (sub.id === 'stories' && currentTab === 'stories') ||
-                          (sub.id === 'careers' && currentTab === 'jobs');
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              if (sub.id === 'events') {
-                                setCurrentTab('events');
-                              } else if (sub.id === 'stories') {
-                                setCurrentTab('stories');
-                              } else if (sub.id === 'careers') {
-                                setCurrentTab('jobs');
-                              } else {
-                                setCurrentTab(`student-${sub.id}`);
-                              }
-                              setIsOpen(false);
-                            }}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isActive
-                                ? 'bg-primary text-white'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800'
-                              }`}
-                          >
-                            <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isActive ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                              <SubIcon className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                            </span>
-                            {sub.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Dynamic Custom Dropdowns (Mobile) — 3 levels */}
-              {customPages.filter(p => p.menu_type === 'parent').map((parent) => {
-                const isMobileOpen = mobileCustomDropdownId === parent.id;
-                const children = customPages.filter(p =>
-                  (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === parent.id
-                );
-                const isActive = currentTab.startsWith(`custmenu__${parent.id}__`);
-                return (
-                  <div key={parent.id}>
+                  );
+                } else {
+                  // Standalone link
+                  const isActive = currentTab === item.id;
+                  return (
                     <button
-                      onClick={() => { setMobileCustomDropdownId(isMobileOpen ? null : parent.id); setMobileSubDropdownId(null); }}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-base font-semibold transition-all ${isActive
+                      key={item.id}
+                      onClick={() => {
+                        navigateToMenu(item);
+                        setIsOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-3 rounded-xl text-base font-semibold transition-all cursor-pointer ${isActive
                           ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
                           : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                     >
-                      <span>{parent.title}</span>
-                      <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileOpen ? 'rotate-180' : ''}`} />
+                      {item.title}
                     </button>
-
-                    {isMobileOpen && (
-                      <div className="mx-2 mb-1 rounded-xl overflow-hidden border border-slate-200/30 dark:border-slate-800/40">
-                        <div className="px-4 py-2 bg-secondary">
-                          <p className="text-[10px] font-bold uppercase tracking-widest text-white/50">{parent.title}</p>
-                        </div>
-                        <div className="p-2 space-y-0.5 bg-slate-50/50 dark:bg-slate-950/20">
-                          {children.length === 0 ? (
-                            <p className="text-[11px] text-slate-400 italic p-3 text-center">No subpages created.</p>
-                          ) : (
-                            children.map((child) => {
-                              const isChildActive = currentTab.startsWith(`custmenu__${parent.id}__${child.id}`);
-                              const subChildren = customPages.filter(p => p.menu_type === 'sub-child' && p.parent_menu === child.id);
-                              const hasSubChildren = subChildren.length > 0;
-                              const isMobileSubOpen = mobileSubDropdownId === child.id;
-
-                              return (
-                                <div key={child.id}>
-                                  <button
-                                    onClick={() => {
-                                      if (hasSubChildren) {
-                                        setMobileSubDropdownId(isMobileSubOpen ? null : child.id);
-                                      } else {
-                                        setCurrentTab(`custmenu__${parent.id}__${child.id}`);
-                                        setIsOpen(false);
-                                      }
-                                    }}
-                                    className={`w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all ${isChildActive
-                                        ? 'bg-primary text-white'
-                                        : 'text-slate-600 dark:text-slate-400 hover:text-primary hover:bg-white dark:hover:bg-slate-800'
-                                      }`}
-                                  >
-                                    <div className="flex items-center gap-2.5 min-w-0">
-                                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${isChildActive ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-700'}`}>
-                                        <FileText className={`w-3.5 h-3.5 ${isChildActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                                      </span>
-                                      <span className="truncate">{child.title}</span>
-                                    </div>
-                                    {hasSubChildren && (
-                                      <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${isMobileSubOpen ? 'rotate-180' : ''} ${isChildActive ? 'text-white/70' : 'text-slate-400'}`} />
-                                    )}
-                                  </button>
-
-                                  {/* Level-3 mobile accordion */}
-                                  {hasSubChildren && isMobileSubOpen && (
-                                    <div className="ml-4 mt-0.5 mb-0.5 border-l-2 border-primary/20 pl-3 space-y-0.5">
-                                      {subChildren.map(sub => {
-                                        const isSubActive = currentTab === `custmenu__${parent.id}__${child.id}__${sub.id}`;
-                                        return (
-                                          <button
-                                            key={sub.id}
-                                            onClick={() => {
-                                              setCurrentTab(`custmenu__${parent.id}__${child.id}__${sub.id}`);
-                                              setIsOpen(false);
-                                            }}
-                                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${isSubActive
-                                                ? 'bg-primary text-white'
-                                                : 'text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary/10'
-                                              }`}
-                                          >
-                                            <ChevronRight className={`w-3.5 h-3.5 shrink-0 ${isSubActive ? 'text-white' : 'text-slate-400'}`} />
-                                            <span className="truncate">{sub.title}</span>
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
+                  );
+                }
               })}
-
-              {/* Top-level: Alumni, Donations, Contact */}
-              {navLinks.map((link) => (
-                <button
-                  key={link.id}
-                  onClick={() => {
-                    setCurrentTab(link.id);
-                    setIsOpen(false);
-                  }}
-                  className={`block w-full text-left px-4 py-3 rounded-xl text-base font-semibold ${currentTab === link.id
-                      ? 'text-primary bg-primary-light/50 dark:bg-primary/10'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                >
-                  {link.label}
-                </button>
-              ))}
 
               <div className="border-t border-slate-200 dark:border-slate-800 my-2 pt-2"></div>
 
