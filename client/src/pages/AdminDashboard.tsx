@@ -6,10 +6,11 @@ import { Donation, Job } from '../types';
 import { 
   ClipboardCheck, PlusSquare, Heart, Settings, BarChart3, 
   Check, X, Sparkles, RefreshCw, Landmark, Calendar, Image,
-  Newspaper, FileText, SlidersHorizontal, Trash2, Edit3, Plus, Save, Eye, Trophy,
+  Newspaper, FileText, SlidersHorizontal, Trash2, Edit3, Edit2, Plus, Save, Eye, EyeOff, Trophy,
   Users, User, AlertTriangle, CheckCircle2, Info, ShieldCheck, BookOpen, FileDown,
-  Briefcase, PlusCircle, LayoutDashboard, Building2
+  Briefcase, PlusCircle, LayoutDashboard, Building2, Award, Loader2
 } from 'lucide-react';
+
 
 
 import { 
@@ -341,6 +342,858 @@ const AdmFilesManagerPanel: React.FC<AdmFilesManagerPanelProps> = ({
   );
 };
 
+interface StaticPagesManagerProps {
+  parentMenuFilter: 'about' | 'academic' | 'student' | 'none';
+  title: string;
+  description: string;
+  allPages: any[];
+  onRefresh: () => Promise<void>;
+  setConfirmDialog: React.Dispatch<React.SetStateAction<any>>;
+}
+
+const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
+  parentMenuFilter, title, description, allPages, onRefresh, setConfirmDialog
+}) => {
+  const [selectedPageId, setSelectedPageId] = useState('');
+  const [pageTitle, setPageTitle] = useState('');
+  const [pageContent, setPageContent] = useState('');
+  const [pageFileUrl, setPageFileUrl] = useState<string | null>(null);
+  const [pageFileName, setPageFileName] = useState<string | null>(null);
+  const [pageParentMenu, setPageParentMenu] = useState(parentMenuFilter === 'none' ? 'none' : parentMenuFilter);
+  const [pageMenuType, setPageMenuType] = useState(parentMenuFilter === 'none' ? 'standalone' : 'child');
+  const [pageIsVisible, setPageIsVisible] = useState(1);
+  const [pageSaved, setPageSaved] = useState(false);
+  const [pageLoading, setPageLoading] = useState(false);
+
+  // Slider state for the edit form
+  const [pageShowSlider, setPageShowSlider] = useState(false);
+  const [pageSliderSlides, setPageSliderSlides] = useState<{
+    image_url: string; title: string; subtitle: string; description: string; btn_text: string; btn_link: string;
+  }[]>([]);
+
+  const [isCreatingPage, setIsCreatingPage] = useState(false);
+  const [newPageId, setNewPageId] = useState('');
+  const [newPageTitle, setNewPageTitle] = useState('');
+  const [newPageContent, setNewPageContent] = useState('');
+  const [newPageFileUrl, setNewPageFileUrl] = useState<string | null>(null);
+  const [newPageFileName, setNewPageFileName] = useState<string | null>(null);
+  const [newPageParentMenu, setNewPageParentMenu] = useState(parentMenuFilter === 'none' ? 'none' : parentMenuFilter);
+  const [newPageMenuType, setNewPageMenuType] = useState(parentMenuFilter === 'none' ? 'standalone' : 'child');
+  const [newPageIsVisible, setNewPageIsVisible] = useState(1);
+  const [newPageShowSlider, setNewPageShowSlider] = useState(false);
+  const [newPageSlides, setNewPageSlides] = useState<{
+    image_url: string; title: string; subtitle: string; description: string; btn_text: string; btn_link: string;
+  }[]>([]);
+
+  const customParents = allPages.filter(p => p.menu_type === 'parent');
+
+  const filteredPages = allPages.filter(p => {
+    if (parentMenuFilter === 'none') {
+      const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(p.id);
+      return !isBasePage && p.parent_menu !== 'about' && p.parent_menu !== 'academic' && p.parent_menu !== 'student';
+    }
+    return p.parent_menu === parentMenuFilter;
+  });
+
+  // Default selection
+  useEffect(() => {
+    if (filteredPages.length > 0) {
+      if (!selectedPageId || !filteredPages.some(p => p.id === selectedPageId)) {
+        setSelectedPageId(filteredPages[0].id);
+      }
+    } else {
+      setSelectedPageId('');
+    }
+  }, [allPages]);
+
+  // Load FULL page data from API when selection changes
+  useEffect(() => {
+    if (!selectedPageId) {
+      setPageTitle(''); setPageContent(''); setPageFileUrl(null); setPageFileName(null);
+      setPageParentMenu(parentMenuFilter === 'none' ? 'none' : parentMenuFilter);
+      setPageMenuType(parentMenuFilter === 'none' ? 'standalone' : 'child');
+      setPageShowSlider(false); setPageSliderSlides([]);
+      return;
+    }
+    setPageLoading(true);
+    fetch(`http://localhost:5001/api/custom-pages/${selectedPageId}`)
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setPageTitle(data.title || '');
+          setPageContent(data.content || '');
+          setPageFileUrl(data.file_url || null);
+          setPageFileName(data.file_name || null);
+          setPageParentMenu(data.parent_menu || (parentMenuFilter === 'none' ? 'none' : parentMenuFilter));
+          setPageMenuType(data.menu_type || (parentMenuFilter === 'none' ? 'standalone' : 'child'));
+          setPageIsVisible(data.is_visible !== undefined ? data.is_visible : 1);
+          setPageShowSlider(!!data.show_slider);
+          try {
+            const slides = JSON.parse(data.slider_slides || '[]');
+            setPageSliderSlides(Array.isArray(slides) ? slides : []);
+          } catch { setPageSliderSlides([]); }
+        }
+        setPageLoading(false);
+      })
+      .catch(() => setPageLoading(false));
+  }, [selectedPageId]);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setPageFileUrl(reader.result as string); setPageFileName(file.name); };
+    reader.readAsDataURL(file);
+  };
+
+  const handleNewPageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setNewPageFileUrl(reader.result as string); setNewPageFileName(file.name); };
+    reader.readAsDataURL(file);
+  };
+
+  const addSlide = (slides: typeof pageSliderSlides, setSlides: (s: typeof pageSliderSlides) => void) => {
+    setSlides([...slides, { image_url: '', title: '', subtitle: '', description: '', btn_text: 'Learn More', btn_link: 'home' }]);
+  };
+  const removeSlide = (slides: typeof pageSliderSlides, setSlides: (s: typeof pageSliderSlides) => void, idx: number) => {
+    setSlides(slides.filter((_, i) => i !== idx));
+  };
+  const updateSlide = (slides: typeof pageSliderSlides, setSlides: (s: typeof pageSliderSlides) => void, idx: number, field: string, value: string) => {
+    setSlides(slides.map((s, i) => i === idx ? { ...s, [field]: value } : s));
+  };
+
+  const handleSavePage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPageSaved(false);
+    if (!selectedPageId) return;
+    try {
+      const res = await fetch(`http://localhost:5001/api/custom-pages/${selectedPageId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: pageTitle,
+          content: pageContent,
+          file_url: pageFileUrl,
+          file_name: pageFileName,
+          parent_menu: pageParentMenu,
+          menu_type: pageMenuType,
+          show_slider: pageShowSlider,
+          slider_slides: JSON.stringify(pageSliderSlides),
+          is_visible: pageIsVisible
+        })
+      });
+      if (res.ok) {
+        setPageSaved(true);
+        await onRefresh();
+        alert("Page updated successfully!");
+        setTimeout(() => setPageSaved(false), 3000);
+      } else {
+        alert("Failed to update page data.");
+      }
+    } catch {
+      alert("Connection failed.");
+    }
+  };
+
+  const handleCreatePage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPageId || !newPageTitle) { alert("Page ID/Slug and Title are required."); return; }
+    const slugRegex = /^[a-zA-Z0-9-_]+$/;
+    if (!slugRegex.test(newPageId)) { alert("Page ID/Slug can only contain alphanumeric characters, hyphens, and underscores."); return; }
+    try {
+      const res = await fetch('http://localhost:5001/api/custom-pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: newPageId,
+          title: newPageTitle,
+          content: newPageContent,
+          parent_menu: parentMenuFilter === 'none' ? newPageParentMenu : parentMenuFilter,
+          menu_type: parentMenuFilter === 'none' ? newPageMenuType : 'child',
+          file_url: newPageFileUrl,
+          file_name: newPageFileName,
+          show_slider: newPageShowSlider,
+          slider_slides: JSON.stringify(newPageSlides),
+          is_visible: newPageIsVisible
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Custom page created successfully!");
+        const createdId = newPageId;
+        setNewPageId(''); setNewPageTitle(''); setNewPageContent('');
+        setNewPageFileUrl(null); setNewPageFileName(null);
+        setNewPageShowSlider(false); setNewPageSlides([]);
+        setNewPageIsVisible(1);
+        setIsCreatingPage(false);
+        await onRefresh();
+        setSelectedPageId(createdId);
+      } else {
+        alert(data.error || "Failed to create new page.");
+      }
+    } catch {
+      alert("Connection failed.");
+    }
+  };
+
+  const handleDeletePage = (pageId: string) => {
+    const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(pageId);
+    if (isBasePage) { alert("This is a system default page and cannot be deleted."); return; }
+    setConfirmDialog({
+      isOpen: true,
+      message: `Delete custom page "${pageId}"? If it's a dropdown parent, all its child subpages will also be deleted.`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`http://localhost:5001/api/custom-pages/${pageId}`, { method: 'DELETE' });
+          if (res.ok) { await onRefresh(); setSelectedPageId(''); }
+          else { alert("Failed to delete page."); }
+        } catch { alert("Connection failed."); }
+        setConfirmDialog((prev: any) => ({ ...prev, isOpen: false }));
+      }
+    });
+  };
+
+  const handleToggleVisibility = async (page: any) => {
+    const nextVisibility = page.is_visible !== 0 ? 0 : 1;
+    try {
+      const res = await fetch(`http://localhost:5001/api/custom-pages/${page.id}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_visible: nextVisibility })
+      });
+      if (res.ok) {
+        await onRefresh();
+        if (selectedPageId === page.id) {
+          setPageIsVisible(nextVisibility);
+        }
+      } else {
+        alert("Failed to toggle visibility.");
+      }
+    } catch {
+      alert("Connection failed.");
+    }
+  };
+
+  // Reusable slide editor block
+  const SlideEditor = ({
+    slides, setSlides, handleSlideImageUpload
+  }: {
+    slides: typeof pageSliderSlides;
+    setSlides: (s: typeof pageSliderSlides) => void;
+    handleSlideImageUpload?: (idx: number, file: File) => void;
+  }) => (
+    <div className="space-y-4">
+      {slides.map((slide, idx) => (
+        <div key={idx} className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 space-y-3 relative">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-extrabold text-primary uppercase tracking-widest">Slide #{idx + 1}</span>
+            <button
+              type="button"
+              onClick={() => removeSlide(slides, setSlides, idx)}
+              className="text-rose-500 hover:text-rose-600 font-bold text-xs cursor-pointer flex items-center gap-1"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Remove
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Background Image URL *</label>
+              <input
+                type="url"
+                value={slide.image_url}
+                onChange={e => updateSlide(slides, setSlides, idx, 'image_url', e.target.value)}
+                placeholder="https://... or paste image URL"
+                className="glass-input text-xs"
+              />
+              <div className="mt-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Or Upload Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => updateSlide(slides, setSlides, idx, 'image_url', reader.result as string);
+                    reader.readAsDataURL(file);
+                  }}
+                  className="glass-input file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-white cursor-pointer text-[10px] w-full mt-0.5"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Slide Title</label>
+              <input
+                type="text"
+                value={slide.title}
+                onChange={e => updateSlide(slides, setSlides, idx, 'title', e.target.value)}
+                placeholder="e.g. Excellence in Sports"
+                className="glass-input text-xs font-bold"
+              />
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-2">Subtitle / Tagline</label>
+              <input
+                type="text"
+                value={slide.subtitle}
+                onChange={e => updateSlide(slides, setSlides, idx, 'subtitle', e.target.value)}
+                placeholder="e.g. Building Champions Since 1985"
+                className="glass-input text-xs"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description (optional)</label>
+              <textarea
+                value={slide.description}
+                onChange={e => updateSlide(slides, setSlides, idx, 'description', e.target.value)}
+                placeholder="Short description shown below the title..."
+                rows={2}
+                className="glass-input text-xs resize-none"
+              />
+            </div>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Button Text</label>
+                <input
+                  type="text"
+                  value={slide.btn_text}
+                  onChange={e => updateSlide(slides, setSlides, idx, 'btn_text', e.target.value)}
+                  placeholder="e.g. Explore Now"
+                  className="glass-input text-xs"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Button Link (tab name or URL)</label>
+                <input
+                  type="text"
+                  value={slide.btn_link}
+                  onChange={e => updateSlide(slides, setSlides, idx, 'btn_link', e.target.value)}
+                  placeholder="e.g. events or https://..."
+                  className="glass-input text-xs"
+                />
+              </div>
+            </div>
+          </div>
+          {slide.image_url && (
+            <div className="mt-2 rounded-xl overflow-hidden h-24 bg-slate-200 dark:bg-slate-800">
+              <img src={slide.image_url} alt={`Slide ${idx + 1} preview`} className="w-full h-full object-cover opacity-80" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            </div>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => addSlide(slides, setSlides)}
+        className="w-full border-2 border-dashed border-primary/30 hover:border-primary/60 text-primary hover:bg-primary/5 rounded-2xl py-3 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+      >
+        <PlusCircle className="w-4 h-4" /> Add New Slide
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6">
+      <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+        <FileText className="w-5 h-5 text-primary" /> {title}
+      </h2>
+      <p className="text-xs text-slate-500">{description}</p>
+
+      {/* Tab switch */}
+      <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <button
+          type="button"
+          onClick={() => setIsCreatingPage(false)}
+          className={`px-4 py-2 text-xs font-extrabold transition-all border-b-2 ${
+            !isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
+          }`}
+        >
+          Edit Existing Page
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsCreatingPage(true)}
+          className={`px-4 py-2 text-xs font-extrabold transition-all border-b-2 ${
+            isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
+          }`}
+        >
+          Create New Page
+        </button>
+      </div>
+
+      {pageSaved && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl p-3 text-xs mb-4 flex items-center gap-2">
+          <Check className="w-4 h-4" /> Changes saved successfully! Page content updated.
+        </div>
+      )}
+
+      {/* EDIT EXISTING PAGE FORM */}
+      {!isCreatingPage && (
+        <form onSubmit={handleSavePage} className="space-y-5 text-xs">
+          {filteredPages.length === 0 ? (
+            <div className="text-center py-12 space-y-3">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <FileText className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-500">No pages found in this section.</p>
+              <p className="text-xs text-slate-400">Switch to "Create New Page" tab to add a custom page.</p>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Page to Edit</label>
+                  <select
+                    value={selectedPageId}
+                    onChange={(e) => setSelectedPageId(e.target.value)}
+                    className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                  >
+                    {filteredPages.map(p => (
+                      <option key={p.id} value={p.id}>{p.title || p.id} ({p.menu_type || 'child'})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title</label>
+                  {pageLoading ? (
+                    <div className="glass-input flex items-center gap-2 text-slate-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+                    </div>
+                  ) : (
+                    <input
+                      type="text" required value={pageTitle}
+                      onChange={(e) => setPageTitle(e.target.value)}
+                      placeholder="Page Title" className="glass-input font-bold"
+                    />
+                  )}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Display Status</label>
+                  {pageLoading ? (
+                    <div className="glass-input flex items-center gap-2 text-slate-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading...
+                    </div>
+                  ) : (
+                    <select
+                      value={pageIsVisible}
+                      onChange={(e) => setPageIsVisible(parseInt(e.target.value))}
+                      className="glass-input font-bold text-slate-700 dark:text-slate-250"
+                    >
+                      <option value={1}>🟢 Visible (Shown in menu)</option>
+                      <option value={0}>🔴 Hidden (Hidden from menu)</option>
+                    </select>
+                  )}
+                </div>
+              </div>
+
+              {parentMenuFilter === 'none' && !pageLoading && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Layout / Navigation Type</label>
+                    <select
+                      value={pageMenuType}
+                      onChange={(e) => {
+                        setPageMenuType(e.target.value);
+                        if (e.target.value === 'standalone' || e.target.value === 'parent') {
+                          setPageParentMenu('none');
+                        } else if (e.target.value === 'child') {
+                          const firstParent = customParents.find(p => p.id !== selectedPageId)?.id || 'none';
+                          setPageParentMenu(firstParent);
+                        } else if (e.target.value === 'sub-parent' || e.target.value === 'sub-child') {
+                          // Parent should be a child/sub-parent page
+                          const firstChild = allPages.find(p => (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.id !== selectedPageId)?.id || 'none';
+                          setPageParentMenu(firstChild);
+                        }
+                      }}
+                      className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                    >
+                      <option value="standalone">Independent Standalone Page (Direct navbar link)</option>
+                      <option value="parent">Dropdown Menu Header (Level 1 — top navbar dropdown)</option>
+                      <option value="child">Child Subpage (Level 2 — inside a top dropdown)</option>
+                      <option value="sub-parent">Sub-Dropdown Header (Level 2 — child with its own sub-menu)</option>
+                      <option value="sub-child">Sub-Child Page (Level 3 — inside a child sub-menu)</option>
+                    </select>
+                  </div>
+
+                  {/* Parent selector — shows different options based on type */}
+                  {(pageMenuType === 'child' || pageMenuType === 'sub-parent') && (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Level-1 Parent Dropdown Menu</label>
+                      <select
+                        value={pageParentMenu}
+                        onChange={(e) => setPageParentMenu(e.target.value)}
+                        className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                      >
+                        {customParents.filter(p => p.id !== selectedPageId).length === 0 ? (
+                          <option value="none">-- No Level-1 Menus Available (Create a Parent first) --</option>
+                        ) : (
+                          customParents.filter(p => p.id !== selectedPageId).map(parent => (
+                            <option key={parent.id} value={parent.id}>{parent.title} ({parent.id})</option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  )}
+
+                  {pageMenuType === 'sub-child' && (() => {
+                    const subParentOptions = allPages.filter(p =>
+                      (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.id !== selectedPageId
+                    );
+                    return (
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Level-2 Parent (Child/Sub-Menu Item)</label>
+                        <select
+                          value={pageParentMenu}
+                          onChange={(e) => setPageParentMenu(e.target.value)}
+                          className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                        >
+                          {subParentOptions.length === 0 ? (
+                            <option value="none">-- No Level-2 Pages Available (Create a Child page first) --</option>
+                          ) : (
+                            subParentOptions.map(p => (
+                              <option key={p.id} value={p.id}>{p.title} ({p.id}) [{p.menu_type}]</option>
+                            ))
+                          )}
+                        </select>
+                        <p className="text-[9px] text-slate-400 mt-0.5">💡 The selected parent must be changed to "Sub-Dropdown Header" type for the sub-menu to appear in the navbar.</p>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* ── HERO SLIDER SECTION ── */}
+              {!pageLoading && (
+                <div className="p-5 border border-dashed border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-950/10 rounded-2xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-800 dark:text-white flex items-center gap-1.5">
+                        <SlidersHorizontal className="w-4 h-4 text-indigo-500" /> Hero Slider (Before Page Content)
+                      </h4>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Add image slides that appear above this page's body text</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setPageShowSlider(!pageShowSlider)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${pageShowSlider ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                    >
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${pageShowSlider ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {pageShowSlider && (
+                    <SlideEditor slides={pageSliderSlides} setSlides={setPageSliderSlides} />
+                  )}
+                  {!pageShowSlider && (
+                    <p className="text-[10px] text-slate-400 italic">Toggle ON above to enable and configure the hero slider for this page.</p>
+                  )}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-1.5 text-left">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
+                {!pageLoading ? (
+                  <RichTextEditor
+                    value={pageContent}
+                    onChange={(html) => setPageContent(html)}
+                    placeholder="Enter detailed description, headings, lists, links, pictures..."
+                    editKey={selectedPageId}
+                  />
+                ) : (
+                  <div className="flex items-center gap-2 p-4 text-slate-400 text-xs">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Loading page content...
+                  </div>
+                )}
+              </div>
+
+              <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1 text-left">
+                    <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
+                    <p className="text-[10px] text-slate-500 leading-normal">Upload PDF or compliance certificate</p>
+                    <input
+                      type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                      onChange={handleFileUpload}
+                      className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                    />
+                  </div>
+                  {pageFileName && (
+                    <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
+                      <FileText className="w-4 h-4 text-primary shrink-0" />
+                      <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{pageFileName}</span>
+                      <button
+                        type="button" onClick={() => { setPageFileUrl(null); setPageFileName(null); }}
+                        className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
+                Save Page Changes
+              </button>
+            </>
+          )}
+        </form>
+      )}
+
+      {/* CREATE NEW PAGE FORM */}
+      {isCreatingPage && (
+        <form onSubmit={handleCreatePage} className="space-y-5 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="flex flex-col gap-1.5 sm:col-span-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page ID / Slug *</label>
+              <input
+                type="text" required value={newPageId}
+                onChange={(e) => setNewPageId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                placeholder="e.g. static-page-slug"
+                className="glass-input font-bold"
+              />
+              <p className="text-[9px] text-slate-400 mt-0.5">Use lowercase, hyphens, and underscores.</p>
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title *</label>
+              <input
+                type="text" required value={newPageTitle}
+                onChange={(e) => setNewPageTitle(e.target.value)}
+                placeholder="e.g. Static Page Title"
+                className="glass-input font-bold"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5 sm:col-span-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Display Status</label>
+              <select
+                value={newPageIsVisible}
+                onChange={(e) => setNewPageIsVisible(parseInt(e.target.value))}
+                className="glass-input font-bold text-slate-700 dark:text-slate-250"
+              >
+                <option value={1}>🟢 Visible (Shown in menu)</option>
+                <option value={0}>🔴 Hidden (Hidden from menu)</option>
+              </select>
+            </div>
+          </div>
+
+          {parentMenuFilter === 'none' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Layout / Navigation Type</label>
+                <select
+                  value={newPageMenuType}
+                  onChange={(e) => {
+                    setNewPageMenuType(e.target.value);
+                    if (e.target.value === 'standalone' || e.target.value === 'parent') {
+                      setNewPageParentMenu('none');
+                    } else if (e.target.value === 'child' || e.target.value === 'sub-parent') {
+                      const firstParent = customParents[0]?.id || 'none';
+                      setNewPageParentMenu(firstParent);
+                    } else if (e.target.value === 'sub-child') {
+                      const firstChild = allPages.find(p => p.menu_type === 'child' || p.menu_type === 'sub-parent')?.id || 'none';
+                      setNewPageParentMenu(firstChild);
+                    }
+                  }}
+                  className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                >
+                  <option value="standalone">Independent Standalone Page (Direct navbar link)</option>
+                  <option value="parent">Dropdown Menu Header (Level 1 — top navbar dropdown)</option>
+                  <option value="child">Child Subpage (Level 2 — inside a top dropdown)</option>
+                  <option value="sub-parent">Sub-Dropdown Header (Level 2 — child with its own sub-menu)</option>
+                  <option value="sub-child">Sub-Child Page (Level 3 — inside a child sub-menu)</option>
+                </select>
+              </div>
+
+              {/* Create form: Level-1 parent selector for child/sub-parent */}
+              {(newPageMenuType === 'child' || newPageMenuType === 'sub-parent') && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Level-1 Parent Dropdown Menu</label>
+                  <select
+                    value={newPageParentMenu}
+                    onChange={(e) => setNewPageParentMenu(e.target.value)}
+                    className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                  >
+                    {customParents.length === 0 ? (
+                      <option value="none">-- No Level-1 Menus Available (Create a Parent first) --</option>
+                    ) : (
+                      customParents.map(parent => (
+                        <option key={parent.id} value={parent.id}>{parent.title} ({parent.id})</option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              )}
+
+              {/* Create form: Level-2 parent selector for sub-child */}
+              {newPageMenuType === 'sub-child' && (() => {
+                const subParentOptions = allPages.filter(p =>
+                  p.menu_type === 'child' || p.menu_type === 'sub-parent'
+                );
+                return (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Level-2 Parent (Child/Sub-Menu Item)</label>
+                    <select
+                      value={newPageParentMenu}
+                      onChange={(e) => setNewPageParentMenu(e.target.value)}
+                      className="glass-input text-slate-700 dark:text-slate-250 font-semibold"
+                    >
+                      {subParentOptions.length === 0 ? (
+                        <option value="none">-- No Level-2 Pages Available (Create a Child page first) --</option>
+                      ) : (
+                        subParentOptions.map(p => (
+                          <option key={p.id} value={p.id}>{p.title} ({p.id}) [{p.menu_type}]</option>
+                        ))
+                      )}
+                    </select>
+                    <p className="text-[9px] text-slate-400 mt-0.5">💡 The selected parent must be "Sub-Dropdown Header" type for the sub-menu to appear in the navbar.</p>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ── HERO SLIDER SECTION (Create) ── */}
+          <div className="p-5 border border-dashed border-indigo-200 dark:border-indigo-900/50 bg-indigo-50/30 dark:bg-indigo-950/10 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-xs text-slate-800 dark:text-white flex items-center gap-1.5">
+                  <SlidersHorizontal className="w-4 h-4 text-indigo-500" /> Hero Slider (Before Page Content)
+                </h4>
+                <p className="text-[10px] text-slate-400 mt-0.5">Add image slides that appear above this page's body text</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setNewPageShowSlider(!newPageShowSlider)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${newPageShowSlider ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+              >
+                <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${newPageShowSlider ? 'translate-x-6' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            {newPageShowSlider && (
+              <SlideEditor slides={newPageSlides} setSlides={setNewPageSlides} />
+            )}
+            {!newPageShowSlider && (
+              <p className="text-[10px] text-slate-400 italic">Toggle ON above to enable and configure the hero slider for this page.</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5 text-left">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
+            <RichTextEditor
+              value={newPageContent}
+              onChange={(html) => setNewPageContent(html)}
+              placeholder="Enter description, lists, formatted text, headings using editor..."
+              editKey="create-new-page"
+            />
+          </div>
+
+          <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-1 text-left">
+                <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
+                <p className="text-[10px] text-slate-500 leading-normal">Upload PDF or compliance document</p>
+                <input
+                  type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                  onChange={handleNewPageFileUpload}
+                  className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                />
+              </div>
+              {newPageFileName && (
+                <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
+                  <FileText className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{newPageFileName}</span>
+                  <button
+                    type="button" onClick={() => { setNewPageFileUrl(null); setNewPageFileName(null); }}
+                    className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
+            Create Custom Page
+          </button>
+        </form>
+      )}
+
+      {/* CATALOG & DELETION CENTER */}
+      {filteredPages.length > 0 && (
+        <div className="border-t border-slate-200 dark:border-slate-800 my-6 pt-6">
+          <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Page Catalog &amp; Deletion Center</h3>
+          <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            {filteredPages.map((page) => {
+              const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(page.id);
+              const typeColor = page.menu_type === 'parent' ? 'bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400' :
+                page.menu_type === 'standalone' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' :
+                page.menu_type === 'sub-parent' ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' :
+                page.menu_type === 'sub-child' ? 'bg-teal-100 text-teal-600 dark:bg-teal-950/30 dark:text-teal-400' :
+                  'bg-blue-100 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400';
+              return (
+                <div key={page.id} className="group flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs shrink-0">
+                      <FileText className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-slate-800 dark:text-white leading-normal text-left truncate">
+                        {page.title || page.id}
+                        {isBasePage && <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold px-1.5 py-0.5 rounded ml-1">System</span>}
+                      </p>
+                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${typeColor}`}>
+                          {page.menu_type || 'child'}
+                        </span>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${page.is_visible !== 0 ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                          {page.is_visible !== 0 ? 'Visible' : 'Hidden'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">slug: {page.id}</span>
+                        {page.parent_menu && page.parent_menu !== 'none' && page.parent_menu !== 'about' && page.parent_menu !== 'academic' && page.parent_menu !== 'student' && (
+                          <span className="text-[9px] text-slate-400">· under: {page.parent_menu}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 ml-2 shrink-0">
+                    <button
+                      type="button" onClick={() => handleToggleVisibility(page)}
+                      className={`p-1.5 rounded-lg transition-all cursor-pointer ${page.is_visible !== 0 ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/20' : 'text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                      title={page.is_visible !== 0 ? 'Hide this page' : 'Show this page'}
+                    >
+                      {page.is_visible !== 0 ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      type="button" onClick={() => { setIsCreatingPage(false); setSelectedPageId(page.id); }}
+                      className="p-1.5 rounded-lg text-slate-450 hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+                      title="Edit this page"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    {!isBasePage ? (
+                      <button
+                        type="button" onClick={() => handleDeletePage(page.id)}
+                        className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                        title="Delete Custom Page"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 font-bold opacity-30 select-none mr-2">Locked</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, setCurrentTab }) => {
 
   const [activeSubTab, setActiveSubTab] = useState('dashboard');
@@ -366,14 +1219,70 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [secondaryColor, setSecondaryColor] = useState(settings.secondary_color);
   const [brandingSaved, setBrandingSaved] = useState(false);
 
+  // Top Header Configurations Form State
+  const [showTopHeader, setShowTopHeader] = useState(1);
+  const [topHeaderPhone, setTopHeaderPhone] = useState('');
+  const [topHeaderEmail, setTopHeaderEmail] = useState('');
+  const [topHeaderBgColor, setTopHeaderBgColor] = useState('');
+  const [topHeaderTextColor, setTopHeaderTextColor] = useState('');
+  const [socialFacebook, setSocialFacebook] = useState('');
+  const [socialTwitter, setSocialTwitter] = useState('');
+  const [socialLinkedin, setSocialLinkedin] = useState('');
+  const [socialInstagram, setSocialInstagram] = useState('');
+  const [socialYoutube, setSocialYoutube] = useState('');
+  const [topHeaderLinks, setTopHeaderLinks] = useState<{ label: string, url: string }[]>([]);
+
+  // Main Header Configurations Form State
+  const [showMainHeader, setShowMainHeader] = useState(1);
+  const [univTagline, setUnivTagline] = useState('');
+  const [accreditationLogos, setAccreditationLogos] = useState<{ id: string; title: string; subtitle: string; image_url: string }[]>([]);
+
+  // Tmp link inputs
+  const [newLinkLabel, setNewLinkLabel] = useState('');
+  const [newLinkUrl, setNewLinkUrl] = useState('');
+
   // Sync branding form state with settings context once loaded
   useEffect(() => {
     if (settings) {
       setUnivName(settings.univ_name || '');
       setLogoUrl(settings.logo_url || '');
       setThemePreset(settings.theme_preset || 'crimson');
-      setPrimaryColor(settings.primary_color || '#f8b600');
+      setPrimaryColor(settings.primary_color || '#800020');
       setSecondaryColor(settings.secondary_color || '#04091e');
+
+      setShowTopHeader(settings.show_top_header ?? 1);
+      setTopHeaderPhone(settings.top_header_phone ?? '+953 012 3654 896');
+      setTopHeaderEmail(settings.top_header_email ?? 'support@apex.edu');
+      setTopHeaderBgColor(settings.top_header_bg_color ?? '#800020');
+      setTopHeaderTextColor(settings.top_header_text_color ?? '#ffffff');
+      setSocialFacebook(settings.social_facebook ?? '#');
+      setSocialTwitter(settings.social_twitter ?? '#');
+      setSocialLinkedin(settings.social_linkedin ?? '#');
+      setSocialInstagram(settings.social_instagram ?? '#');
+      setSocialYoutube(settings.social_youtube ?? '#');
+      try {
+        setTopHeaderLinks(JSON.parse(settings.top_header_links || '[]'));
+      } catch {
+        setTopHeaderLinks([]);
+      }
+
+      setShowMainHeader(settings.show_main_header ?? 1);
+      setUnivTagline(settings.univ_tagline ?? 'Autonomous Institution | Approved by AICTE | Permanently Affiliated');
+      try {
+        const parsed = JSON.parse(settings.accreditation_logos || '[]');
+        if (parsed && parsed.length > 0) {
+          setAccreditationLogos(parsed);
+        } else {
+          setAccreditationLogos([
+            { id: 'naac', title: 'NAAC A++', subtitle: 'Accredited Grade', image_url: '/naac.png' },
+            { id: 'nba', title: 'NBA', subtitle: 'Accredited Tier-1', image_url: '/nba.png' },
+            { id: 'nirf', title: 'NIRF', subtitle: 'Top Engineering', image_url: '/nirf.png' },
+            { id: 'ugc', title: 'UGC', subtitle: 'Autonomous', image_url: '/ugc.png' }
+          ]);
+        }
+      } catch {
+        setAccreditationLogos([]);
+      }
     }
   }, [settings]);
 
@@ -895,7 +1804,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       logo_url: logoUrl,
       theme_preset: themePreset,
       primary_color: primaryColor,
-      secondary_color: secondaryColor
+      secondary_color: secondaryColor,
+      show_top_header: showTopHeader,
+      top_header_phone: topHeaderPhone,
+      top_header_email: topHeaderEmail,
+      top_header_bg_color: topHeaderBgColor,
+      top_header_text_color: topHeaderTextColor,
+      social_facebook: socialFacebook,
+      social_twitter: socialTwitter,
+      social_linkedin: socialLinkedin,
+      social_instagram: socialInstagram,
+      social_youtube: socialYoutube,
+      top_header_links: JSON.stringify(topHeaderLinks),
+      show_main_header: showMainHeader,
+      univ_tagline: univTagline,
+      accreditation_logos: JSON.stringify(accreditationLogos)
     });
     if (success) {
       setBrandingSaved(true);
@@ -2511,303 +3434,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* ── ABOUT-MANAGER TAB ── */}
         {activeSubTab === 'about-manager' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
-              <FileText className="w-6 h-6 text-primary" /> Manage About Subpages
-            </h2>
-            <p className="text-sm text-slate-500">
-              Create new custom pages, update description text, configure navbar menu placement, and attach PDF/official documents.
-            </p>
+          <StaticPagesManager
+            parentMenuFilter="about"
+            title="Manage Static pages"
+            description="Manage static subpages displayed under the About menu dropdown."
+            allPages={allAboutPages}
+            onRefresh={fetchData}
+            setConfirmDialog={setConfirmDialog}
+          />
+        )}
 
-            {/* Tab switch between Edit and Create */}
-            <div className="flex gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
-              <button
-                type="button"
-                onClick={() => setIsCreatingPage(false)}
-                className={`px-4 py-2 text-sm font-extrabold transition-all border-b-2 ${
-                  !isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
-                }`}
-              >
-                Edit Existing Page
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsCreatingPage(true)}
-                className={`px-4 py-2 text-sm font-extrabold transition-all border-b-2 ${
-                  isCreatingPage ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-primary'
-                }`}
-              >
-                Create New Page
-              </button>
-            </div>
+        {/* ── ACADEMIC-PAGES-MANAGER TAB ── */}
+        {activeSubTab === 'academic-pages-manager' && (
+          <StaticPagesManager
+            parentMenuFilter="academic"
+            title="Manage Academic Pages"
+            description="Manage custom static pages and disclosures displayed under the Academic dropdown menu."
+            allPages={allAboutPages}
+            onRefresh={fetchData}
+            setConfirmDialog={setConfirmDialog}
+          />
+        )}
 
-            {aboutPageSaved && (
-              <div className="bg-emerald-50 text-emerald-600 rounded-xl p-3 text-xs mb-4">
-                Subpage changes saved successfully! Content updated dynamically.
-              </div>
-            )}
+        {/* ── STUDENT-PAGES-MANAGER TAB ── */}
+        {activeSubTab === 'student-pages-manager' && (
+          <StaticPagesManager
+            parentMenuFilter="student"
+            title="Manage Student Pages"
+            description="Manage custom static pages displayed under the Student Corner menu dropdown."
+            allPages={allAboutPages}
+            onRefresh={fetchData}
+            setConfirmDialog={setConfirmDialog}
+          />
+        )}
 
-            {/* 1. EDIT EXISTING PAGE FORM */}
-            {!isCreatingPage && (
-              <form onSubmit={handleSaveAboutPage} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Select Subpage to Edit</label>
-                    <select
-                      value={selectedAboutPageId}
-                      onChange={(e) => setSelectedAboutPageId(e.target.value)}
-                      className="glass-input text-slate-500 font-semibold"
-                    >
-                      {allAboutPages.map(p => (
-                        <option key={p.id} value={p.id}>{p.title} (slug: {p.id})</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title</label>
-                    <input
-                      type="text"
-                      required
-                      value={aboutPageTitle}
-                      onChange={(e) => setAboutPageTitle(e.target.value)}
-                      placeholder="Page Title"
-                      className="glass-input font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navbar Parent Menu</label>
-                    <select
-                      value={aboutPageParentMenu}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setAboutPageParentMenu(val);
-                        if (val === 'none') {
-                          setAboutPageMenuType('standalone');
-                        } else {
-                          setAboutPageMenuType('child');
-                        }
-                      }}
-                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold"
-                    >
-                      <option value="about">About Dropdown</option>
-                      <option value="academic">Academic Dropdown</option>
-                      <option value="student">Student Corner Dropdown</option>
-                      <option value="none">None (Standalone Link)</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Item Type</label>
-                    <select
-                      value={aboutPageMenuType}
-                      onChange={(e) => setAboutPageMenuType(e.target.value)}
-                      disabled={aboutPageParentMenu === 'none'}
-                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-50"
-                    >
-                      <option value="child">Child Tab (Under selected dropdown)</option>
-                      <option value="standalone">New Standalone Menu Link</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 text-left">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
-                  <RichTextEditor
-                    value={aboutPageContent}
-                    onChange={(html) => setAboutPageContent(html)}
-                    placeholder="Enter detailed description, headings, lists, links, pictures, and formatted text for this subpage..."
-                    editKey={selectedAboutPageId}
-                  />
-                </div>
-
-                <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1 text-left">
-                      <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
-                      <p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                        onChange={handleFileUpload}
-                        className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
-                      />
-                    </div>
-                    {aboutPageFileName && (
-                      <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
-                        <FileText className="w-4 h-4 text-primary shrink-0" />
-                        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{aboutPageFileName}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAboutPageFileUrl(null);
-                            setAboutPageFileName(null);
-                          }}
-                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
-                  Save Subpage Changes
-                </button>
-              </form>
-            )}
-
-            {/* 2. CREATE NEW PAGE FORM */}
-            {isCreatingPage && (
-              <form onSubmit={handleCreatePage} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="flex flex-col gap-1.5 sm:col-span-1">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page ID / Slug *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newPageId}
-                      onChange={(e) => setNewPageId(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
-                      placeholder="e.g. dynamic-sports-rules"
-                      className="glass-input font-bold"
-                    />
-                    <p className="text-[9px] text-slate-400 mt-0.5">Use lowercase, hyphens, and underscores.</p>
-                  </div>
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Header Title *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newPageTitle}
-                      onChange={(e) => setNewPageTitle(e.target.value)}
-                      placeholder="e.g. Sports Rules &amp; Guidelines"
-                      className="glass-input font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navbar Parent Menu</label>
-                    <select
-                      value={newPageParentMenu}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setNewPageParentMenu(val);
-                        if (val === 'none') {
-                          setNewPageMenuType('standalone');
-                        } else {
-                          setNewPageMenuType('child');
-                        }
-                      }}
-                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold"
-                    >
-                      <option value="about">About Dropdown</option>
-                      <option value="academic">Academic Dropdown</option>
-                      <option value="student">Student Corner Dropdown</option>
-                      <option value="none">None (Standalone Link)</option>
-                    </select>
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Item Type</label>
-                    <select
-                      value={newPageMenuType}
-                      onChange={(e) => setNewPageMenuType(e.target.value)}
-                      disabled={newPageParentMenu === 'none'}
-                      className="glass-input text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-50"
-                    >
-                      <option value="child">Child Tab (Under selected dropdown)</option>
-                      <option value="standalone">New Standalone Menu Link</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex flex-col gap-1.5 text-left">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page Body Content (Description)</label>
-                  <RichTextEditor
-                    value={newPageContent}
-                    onChange={(html) => setNewPageContent(html)}
-                    placeholder="Enter description, lists, formatted text, and headings using editor..."
-                    editKey="create-new-page"
-                  />
-                </div>
-
-                <div className="p-5 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl space-y-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="space-y-1 text-left">
-                      <h4 className="font-bold text-xs text-slate-800 dark:text-white">Page Attachment Document (Optional)</h4>
-                      <p className="text-[10px] text-slate-500 leading-normal">Upload PDF, Docx, or compliance certificate</p>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                        onChange={handleNewPageFileUpload}
-                        className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
-                      />
-                    </div>
-                    {newPageFileName && (
-                      <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
-                        <FileText className="w-4 h-4 text-primary shrink-0" />
-                        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{newPageFileName}</span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setNewPageFileUrl(null);
-                            setNewPageFileName(null);
-                          }}
-                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md cursor-pointer">
-                  Create Custom Page
-                </button>
-              </form>
-            )}
-
-            {/* 3. LIST OF ALL PAGES WITH DELETION FACILITY */}
-            <div className="border-t border-slate-200 dark:border-slate-800 my-6 pt-6">
-              <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Page Catalog &amp; Deletion Center</h3>
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                {allAboutPages.map((page) => {
-                  const isBasePage = ['about_us', 'committee', 'director', 'circulars', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results'].includes(page.id);
-                  return (
-                    <div key={page.id} className="group flex items-center justify-between p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-2xl transition-all">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center font-bold text-xs">
-                          <FileText className="w-4 h-4 text-primary" />
-                        </div>
-                        <div>
-                          <p className="font-bold text-xs text-slate-800 dark:text-white leading-normal">
-                            {page.title} {isBasePage && <span className="text-[9px] bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold px-1.5 py-0.5 rounded ml-1">System Base</span>}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-                            Slug: {page.id} · Type: {page.menu_type || 'child'} · Placement: {page.parent_menu || 'about'}
-                          </p>
-                        </div>
-                      </div>
-                      {!isBasePage ? (
-                        <button
-                          type="button"
-                          onClick={() => handleDeletePage(page.id)}
-                          className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
-                          title="Delete Custom Page"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <span className="text-[10px] text-slate-400 font-bold opacity-30 select-none mr-2">Locked</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+        {/* ── STANDALONE-PAGES-MANAGER TAB ── */}
+        {activeSubTab === 'standalone-pages-manager' && (
+          <StaticPagesManager
+            parentMenuFilter="none"
+            title="Manage Independent Pages"
+            description="Manage custom standalone pages that exist independently on the portal."
+            allPages={allAboutPages}
+            onRefresh={fetchData}
+            setConfirmDialog={setConfirmDialog}
+          />
         )}
 
         {/* ── COURSES-MANAGER TAB ── */}
@@ -4153,7 +4823,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                       required
                       value={univName}
                       onChange={e => setUnivName(e.target.value)}
-                      className="glass-input"
+                      className="glass-input font-bold"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">University Sub-Tagline (Header Subtitle)</label>
+                    <input
+                      type="text"
+                      value={univTagline}
+                      onChange={e => setUnivTagline(e.target.value)}
+                      placeholder="e.g. Autonomous Institution | Approved by AICTE"
+                      className="glass-input font-medium"
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
@@ -4166,6 +4846,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                       className="glass-input"
                     />
                     <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Type or paste image URL, or upload file on the right</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 pt-1">
+                    <input
+                      type="checkbox"
+                      id="showMainHeader"
+                      checked={showMainHeader === 1}
+                      onChange={e => setShowMainHeader(e.target.checked ? 1 : 0)}
+                      className="w-4 h-4 rounded text-primary focus:ring-primary/30 accent-primary cursor-pointer"
+                    />
+                    <label htmlFor="showMainHeader" className="font-bold text-slate-700 dark:text-slate-250 cursor-pointer select-none text-[11px]">
+                      Enable Main Logo & Accreditation Header Row (Tier 2 like IARE)
+                    </label>
                   </div>
                 </div>
 
@@ -4222,6 +4914,138 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                     )}
                   </div>
                 </div>
+
+                {/* Accreditation & Recognition Badges Manager */}
+                {showMainHeader === 1 && (
+                  <div className="p-5 border border-slate-200 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-950/10 rounded-2xl space-y-4 md:col-span-2 text-left">
+                    <h4 className="font-extrabold text-xs text-slate-700 dark:text-slate-350 uppercase tracking-wider flex items-center gap-1.5">
+                      <Award className="w-4 h-4 text-primary" /> Accreditation & Certification Badges Manager (Tier 2 Row)
+                    </h4>
+                    <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-relaxed">
+                      Customize the text labels and upload official accreditation emblems (such as NAAC, NBA, NIRF, and UGC/Autonomous). Uploaded files will be encoded and stored.
+                    </p>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {accreditationLogos.map((badge, idx) => (
+                        <div key={badge.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50 flex flex-col justify-between gap-3 shadow-sm hover:shadow-md transition-shadow">
+                          <div className="flex justify-end items-center pb-2 border-b border-slate-100 dark:border-slate-800">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to remove the "${badge.title}" badge?`)) {
+                                  setAccreditationLogos(accreditationLogos.filter(b => b.id !== badge.id));
+                                }
+                              }}
+                              className="text-rose-500 hover:text-rose-700 transition-colors p-1.5 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-1 font-bold text-[9px] uppercase"
+                              title="Delete this accreditation badge"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> Delete Badge
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Badge Title</label>
+                              <input
+                                type="text"
+                                value={badge.title}
+                                onChange={e => {
+                                  const updated = [...accreditationLogos];
+                                  updated[idx].title = e.target.value;
+                                  setAccreditationLogos(updated);
+                                }}
+                                className="glass-input text-[11px] font-bold"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Subtitle Info</label>
+                              <input
+                                type="text"
+                                value={badge.subtitle}
+                                onChange={e => {
+                                  const updated = [...accreditationLogos];
+                                  updated[idx].subtitle = e.target.value;
+                                  setAccreditationLogos(updated);
+                                }}
+                                className="glass-input text-[11px] font-semibold"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Image Upload/URL Facility */}
+                          <div className="flex items-center gap-3 mt-2 bg-slate-50 dark:bg-slate-950/40 p-2.5 rounded-xl border border-slate-200 dark:border-slate-850">
+                            
+                            <div className="w-12 h-12 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                              {badge.image_url ? (
+                                <img 
+                                  src={badge.image_url} 
+                                  alt={badge.title} 
+                                  className="w-full h-full object-contain"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-[8px] text-slate-400 font-bold uppercase">No Image</span>
+                              )}
+                            </div>
+
+                            <div className="flex-1 flex flex-col gap-1">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    const reader = new FileReader();
+                                    reader.onload = () => {
+                                      const updated = [...accreditationLogos];
+                                      updated[idx].image_url = reader.result as string;
+                                      setAccreditationLogos(updated);
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="text-[9px] file:mr-2 file:py-1 file:px-2 file:rounded-lg file:border-0 file:text-[9px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer w-full"
+                              />
+                              <input
+                                type="text"
+                                placeholder="Or paste URL"
+                                value={badge.image_url}
+                                onChange={e => {
+                                  const updated = [...accreditationLogos];
+                                  updated[idx].image_url = e.target.value;
+                                  setAccreditationLogos(updated);
+                                }}
+                                className="glass-input text-[9px] h-6 py-0 px-2 mt-1"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const id = prompt("Enter a unique lower-case ID for the new badge (e.g. naac, nba, custom):");
+                          if (!id) return;
+                          const title = prompt("Enter badge title (e.g. NAAC A++):");
+                          if (!title) return;
+                          const subtitle = prompt("Enter subtitle (e.g. Accredited Grade):");
+                          if (!subtitle) return;
+                          setAccreditationLogos([
+                            ...accreditationLogos,
+                            { id: id.toLowerCase().trim(), title, subtitle, image_url: '' }
+                          ]);
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-slate-900 font-bold hover:bg-primary-dark transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add New Badge
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -4290,8 +5114,212 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary text-xs font-bold py-3.5 px-8 shadow-md">
-                Save & Update branding colors
+              {/* Divider */}
+              <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-6 pt-6" />
+
+              {/* Customizable Top Header Section */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <SlidersHorizontal className="w-5 h-5 text-primary" /> Customizable Top Header Bar (Like IARE)
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Configure the visibility, contact details, socials, background, and quick link portals in the top utility bar.</p>
+                </div>
+
+                <div className="flex items-center gap-3 p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200/50 dark:border-slate-800/40">
+                  <input
+                    type="checkbox"
+                    id="showTopHeader"
+                    checked={showTopHeader === 1}
+                    onChange={e => setShowTopHeader(e.target.checked ? 1 : 0)}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary/30 accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="showTopHeader" className="font-bold text-slate-700 dark:text-slate-250 cursor-pointer select-none">
+                    Enable Top Utility Header Bar
+                  </label>
+                </div>
+
+                {showTopHeader === 1 && (
+                  <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Header Phone</label>
+                        <input
+                          type="text"
+                          value={topHeaderPhone}
+                          onChange={e => setTopHeaderPhone(e.target.value)}
+                          placeholder="e.g. +953 012 3654 896"
+                          className="glass-input font-semibold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Top Header Email</label>
+                        <input
+                          type="email"
+                          value={topHeaderEmail}
+                          onChange={e => setTopHeaderEmail(e.target.value)}
+                          placeholder="e.g. support@apex.edu"
+                          className="glass-input font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Header Background Color Hex</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={topHeaderBgColor}
+                            onChange={e => setTopHeaderBgColor(e.target.value)}
+                            className="w-10 h-10 border border-slate-200 rounded-lg overflow-hidden cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={topHeaderBgColor}
+                            onChange={e => setTopHeaderBgColor(e.target.value)}
+                            className="glass-input flex-1 font-mono"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Header Text Color Hex</label>
+                        <div className="flex gap-2 items-center">
+                          <input
+                            type="color"
+                            value={topHeaderTextColor}
+                            onChange={e => setTopHeaderTextColor(e.target.value)}
+                            className="w-10 h-10 border border-slate-200 rounded-lg overflow-hidden cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={topHeaderTextColor}
+                            onChange={e => setTopHeaderTextColor(e.target.value)}
+                            className="glass-input flex-1 font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Social links URLs */}
+                    <div className="p-5 border border-slate-200 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-950/10 rounded-2xl space-y-4">
+                      <h4 className="font-bold text-xs text-slate-700 dark:text-slate-350">Social Media Profile Links</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Facebook URL</label>
+                          <input
+                            type="text" value={socialFacebook}
+                            onChange={e => setSocialFacebook(e.target.value)}
+                            placeholder="#" className="glass-input font-medium"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Twitter/X URL</label>
+                          <input
+                            type="text" value={socialTwitter}
+                            onChange={e => setSocialTwitter(e.target.value)}
+                            placeholder="#" className="glass-input font-medium"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">LinkedIn URL</label>
+                          <input
+                            type="text" value={socialLinkedin}
+                            onChange={e => setSocialLinkedin(e.target.value)}
+                            placeholder="#" className="glass-input font-medium"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Instagram URL</label>
+                          <input
+                            type="text" value={socialInstagram}
+                            onChange={e => setSocialInstagram(e.target.value)}
+                            placeholder="#" className="glass-input font-medium"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">YouTube URL</label>
+                          <input
+                            type="text" value={socialYoutube}
+                            onChange={e => setSocialYoutube(e.target.value)}
+                            placeholder="#" className="glass-input font-medium"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Quick links Dynamic Builder */}
+                    <div className="p-5 border border-slate-200 dark:border-slate-800/80 bg-slate-50/20 dark:bg-slate-950/10 rounded-2xl space-y-4">
+                      <h4 className="font-bold text-xs text-slate-700 dark:text-slate-350">Quick Utility Portals & Login Links</h4>
+                      
+                      {/* Active Quick Links list */}
+                      <div className="space-y-2">
+                        {topHeaderLinks.length === 0 ? (
+                          <p className="text-[11px] text-slate-400 italic">No custom quick links added yet. Add one below.</p>
+                        ) : (
+                          <div className="flex flex-wrap gap-2 text-left">
+                            {topHeaderLinks.map((link, idx) => (
+                              <div key={idx} className="flex items-center gap-2 p-1.5 px-3 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/50 rounded-xl shadow-sm">
+                                <span className="text-[10px] font-extrabold text-slate-700 dark:text-slate-350">{link.label}</span>
+                                <span className="text-[9px] text-slate-450 font-semibold truncate max-w-[120px] font-mono">({link.url})</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTopHeaderLinks(links => links.filter((_, i) => i !== idx));
+                                  }}
+                                  className="text-rose-500 hover:text-rose-700 font-bold text-xs cursor-pointer ml-1"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Add new link form */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 items-end pt-2 border-t border-slate-200/50 dark:border-slate-850/50">
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Link Display Label</label>
+                          <input
+                            type="text" value={newLinkLabel}
+                            onChange={e => setNewLinkLabel(e.target.value)}
+                            placeholder="e.g. MOODLE LOGIN"
+                            className="glass-input font-bold"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1.5 text-left">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Destination URL</label>
+                          <input
+                            type="text" value={newLinkUrl}
+                            onChange={e => setNewLinkUrl(e.target.value)}
+                            placeholder="e.g. https://moodle.college.edu"
+                            className="glass-input font-medium"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!newLinkLabel || !newLinkUrl) {
+                              alert("Please fill in both the display label and URL destination.");
+                              return;
+                            }
+                            setTopHeaderLinks([...topHeaderLinks, { label: newLinkLabel.toUpperCase(), url: newLinkUrl }]);
+                            setNewLinkLabel('');
+                            setNewLinkUrl('');
+                          }}
+                          className="btn-primary text-[10px] font-black tracking-wider uppercase py-2.5 px-4 h-[34px] flex items-center justify-center shrink-0 cursor-pointer"
+                        >
+                          Add Link
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="btn-primary text-xs font-bold py-3.5 px-8 shadow-md cursor-pointer">
+                Save & Update branding settings
               </button>
             </form>
           </div>

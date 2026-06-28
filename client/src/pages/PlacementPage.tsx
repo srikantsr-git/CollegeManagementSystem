@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Briefcase, TrendingUp, Award, Building2, Users, Star,
-  ChevronRight, ArrowRight, Sparkles, Globe, Target, BarChart3
+  Sparkles, Globe, Target, BarChart3
 } from 'lucide-react';
 
 interface PlacementContent {
@@ -27,16 +27,25 @@ interface Company {
 function useCounter(target: number, duration = 2000, start = false) {
   const [value, setValue] = useState(0);
   useEffect(() => {
-    if (!start || target === 0) return;
+    if (!start || target === 0) {
+      setValue(0);
+      return;
+    }
     let startTime: number | null = null;
+    let frameId: number;
     const animate = (ts: number) => {
       if (!startTime) startTime = ts;
       const progress = Math.min((ts - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setValue(Math.floor(eased * target));
-      if (progress < 1) requestAnimationFrame(animate);
+      if (progress < 1) {
+        frameId = requestAnimationFrame(animate);
+      }
     };
-    requestAnimationFrame(animate);
+    frameId = requestAnimationFrame(animate);
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+    };
   }, [target, duration, start]);
   return value;
 }
@@ -45,7 +54,7 @@ function useCounter(target: number, duration = 2000, start = false) {
 const CompanyLogo: React.FC<{ company: Company }> = ({ company }) => {
   const [hasError, setHasError] = useState(false);
   const colors = ['from-violet-500 to-purple-600', 'from-blue-500 to-cyan-600', 'from-emerald-500 to-teal-600', 'from-rose-500 to-pink-600', 'from-amber-500 to-orange-600', 'from-indigo-500 to-blue-600'];
-  const colorClass = colors[company.id % colors.length];
+  const colorClass = colors[(company.id || 0) % colors.length];
   if (!company.logo_url || hasError) {
     return (
       <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br ${colorClass} rounded-2xl`}>

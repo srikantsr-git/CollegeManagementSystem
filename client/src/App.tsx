@@ -551,9 +551,18 @@ const MainAppContent: React.FC = () => {
             )}
 
             {/* 7.7. STUDENT CORNER SUBPAGES */}
-            {currentTab.startsWith('student-') && (
+            {currentTab.startsWith('student-') && currentTab !== 'student-dashboard' && (
               <AboutPage subpageId={currentTab.replace('student-', '')} setCurrentTab={setCurrentTab} />
             )}
+
+            {/* 7.7.5. CUSTOM MENU SUBPAGES */}
+            {currentTab.startsWith('custmenu__') && (() => {
+              // Tab format: custmenu__{parentId}__{childId} or custmenu__{parentId}__{childId}__{subChildId}
+              // The page slug is always the LAST segment
+              const parts = currentTab.split('__');
+              const pageId = parts[parts.length - 1];
+              return <AboutPage subpageId={pageId} setCurrentTab={setCurrentTab} />;
+            })()}
 
             {/* 7.8. GALLERY PAGE */}
             {currentTab === 'gallery' && (

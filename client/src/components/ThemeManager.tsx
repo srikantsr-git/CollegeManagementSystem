@@ -52,8 +52,22 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     univ_name: 'Apex University',
     logo_url: '',
     theme_preset: 'crimson',
-    primary_color: '#f8b600',
-    secondary_color: '#04091e'
+    primary_color: '#800020',
+    secondary_color: '#04091e',
+    show_top_header: 1,
+    top_header_phone: '+953 012 3654 896',
+    top_header_email: 'support@apex.edu',
+    top_header_bg_color: '#800020',
+    top_header_text_color: '#ffffff',
+    social_facebook: '#',
+    social_twitter: '#',
+    social_linkedin: '#',
+    social_instagram: '#',
+    social_youtube: '#',
+    top_header_links: '[]',
+    show_main_header: 1,
+    univ_tagline: 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
+    accreditation_logos: '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]'
   });
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -86,6 +100,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     root.style.setProperty('--color-primary', prim);
     root.style.setProperty('--color-secondary', sec);
+
+    // Dynamic top header variables
+    root.style.setProperty('--color-top-header-bg', settings.top_header_bg_color || '#800020');
+    root.style.setProperty('--color-top-header-text', settings.top_header_text_color || '#ffffff');
 
     // Calculate light/dark offsets
     root.style.setProperty('--color-primary-dark', preset.primaryDark);

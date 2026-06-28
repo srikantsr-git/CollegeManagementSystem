@@ -32,6 +32,23 @@ function initializeDatabase() {
           db.run("UPDATE custom_pages SET parent_menu = 'student' WHERE id IN ('souvenirs', 'calendar', 'draws', 'results');", () => {});
         });
         db.run("ALTER TABLE custom_pages ADD COLUMN menu_type TEXT DEFAULT 'child';", () => {});
+        db.run("ALTER TABLE custom_pages ADD COLUMN is_visible INTEGER DEFAULT 1;", () => {});
+        db.run("ALTER TABLE custom_pages ADD COLUMN show_slider INTEGER DEFAULT 0;", () => {});
+        db.run("ALTER TABLE custom_pages ADD COLUMN slider_slides TEXT DEFAULT '[]';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN show_top_header INTEGER DEFAULT 1;", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN top_header_phone TEXT DEFAULT '+953 012 3654 896';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN top_header_email TEXT DEFAULT 'support@apex.edu';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN top_header_bg_color TEXT DEFAULT '#800020';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN top_header_text_color TEXT DEFAULT '#ffffff';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN social_facebook TEXT DEFAULT '#';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN social_twitter TEXT DEFAULT '#';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN social_linkedin TEXT DEFAULT '#';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN social_instagram TEXT DEFAULT '#';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN social_youtube TEXT DEFAULT '#';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN top_header_links TEXT DEFAULT '[]';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN show_main_header INTEGER DEFAULT 1;", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN univ_tagline TEXT DEFAULT 'Autonomous Institution | Approved by AICTE | Permanently Affiliated';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN accreditation_logos TEXT DEFAULT '[]';", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_url TEXT;", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_name TEXT;", () => {});
         db.run("ALTER TABLE directors ADD COLUMN profile_pdf_url TEXT;", () => {});
@@ -107,7 +124,21 @@ function initializeDatabase() {
           website TEXT,
           sort_order INTEGER DEFAULT 0,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`, () => {});
+        )`, () => {
+          db.get('SELECT COUNT(*) as count FROM placement_companies', (e, row) => {
+            if (!e && row && row.count === 0) {
+              const stmt = db.prepare("INSERT INTO placement_companies (name, logo_url, website, sort_order) VALUES (?, ?, ?, ?)");
+              stmt.run("Google", "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg", "https://google.com", 1);
+              stmt.run("Goldman Sachs", "https://upload.wikimedia.org/wikipedia/commons/6/61/Goldman_Sachs.svg", "https://goldmansachs.com", 2);
+              stmt.run("Netflix", "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg", "https://netflix.com", 3);
+              stmt.run("Microsoft", "https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_2012.svg", "https://microsoft.com", 4);
+              stmt.run("Amazon", "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", "https://amazon.com", 5);
+              stmt.run("Tata Consultancy Services", "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg", "https://tcs.com", 6);
+              stmt.run("Infosys", "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg", "https://infosys.com", 7);
+              stmt.finalize();
+            }
+          });
+        });
 
       }
     });

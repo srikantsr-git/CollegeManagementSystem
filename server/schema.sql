@@ -5,7 +5,21 @@ CREATE TABLE IF NOT EXISTS settings (
   logo_url TEXT,
   theme_preset TEXT NOT NULL DEFAULT 'crimson', -- 'crimson', 'emerald', 'sapphire', 'midnight'
   primary_color TEXT DEFAULT '#800020',
-  secondary_color TEXT DEFAULT '#1e293b'
+  secondary_color TEXT DEFAULT '#1e293b',
+  show_top_header INTEGER DEFAULT 1,
+  top_header_phone TEXT DEFAULT '+953 012 3654 896',
+  top_header_email TEXT DEFAULT 'support@apex.edu',
+  top_header_bg_color TEXT DEFAULT '#800020',
+  top_header_text_color TEXT DEFAULT '#ffffff',
+  social_facebook TEXT DEFAULT '#',
+  social_twitter TEXT DEFAULT '#',
+  social_linkedin TEXT DEFAULT '#',
+  social_instagram TEXT DEFAULT '#',
+  social_youtube TEXT DEFAULT '#',
+  top_header_links TEXT DEFAULT '[]',
+  show_main_header INTEGER DEFAULT 1,
+  univ_tagline TEXT DEFAULT 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
+  accreditation_logos TEXT DEFAULT '[]'
 );
 
 -- Create users table (Alumni, Students, Admins)
@@ -260,6 +274,7 @@ CREATE TABLE IF NOT EXISTS custom_pages (
   file_name TEXT,
   parent_menu TEXT DEFAULT 'about',
   menu_type TEXT DEFAULT 'child',
+  is_visible INTEGER DEFAULT 1,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

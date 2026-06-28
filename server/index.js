@@ -17,8 +17,22 @@ app.get('/api/settings', async (req, res) => {
       univ_name: 'Apex University',
       logo_url: '',
       theme_preset: 'crimson',
-      primary_color: '#991b1b',
-      secondary_color: '#1e293b'
+      primary_color: '#800020',
+      secondary_color: '#1e293b',
+      show_top_header: 1,
+      top_header_phone: '+953 012 3654 896',
+      top_header_email: 'support@apex.edu',
+      top_header_bg_color: '#800020',
+      top_header_text_color: '#ffffff',
+      social_facebook: '#',
+      social_twitter: '#',
+      social_linkedin: '#',
+      social_instagram: '#',
+      social_youtube: '#',
+      top_header_links: '[]',
+      show_main_header: 1,
+      univ_tagline: 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
+      accreditation_logos: '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -26,12 +40,30 @@ app.get('/api/settings', async (req, res) => {
 });
 
 app.post('/api/settings', async (req, res) => {
-  const { univ_name, logo_url, theme_preset, primary_color, secondary_color } = req.body;
+  const {
+    univ_name, logo_url, theme_preset, primary_color, secondary_color,
+    show_top_header, top_header_phone, top_header_email, top_header_bg_color, top_header_text_color,
+    social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
+    top_header_links, show_main_header, univ_tagline, accreditation_logos
+  } = req.body;
   try {
     await query.run(
-      `INSERT OR REPLACE INTO settings (id, univ_name, logo_url, theme_preset, primary_color, secondary_color)
-       VALUES (1, ?, ?, ?, ?, ?)`,
-      [univ_name, logo_url, theme_preset, primary_color, secondary_color]
+      `INSERT OR REPLACE INTO settings (
+        id, univ_name, logo_url, theme_preset, primary_color, secondary_color,
+        show_top_header, top_header_phone, top_header_email, top_header_bg_color, top_header_text_color,
+        social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
+        top_header_links, show_main_header, univ_tagline, accreditation_logos
+      )
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        univ_name, logo_url, theme_preset, primary_color, secondary_color,
+        show_top_header ?? 1, top_header_phone ?? '+953 012 3654 896', top_header_email ?? 'support@apex.edu',
+        top_header_bg_color ?? '#800020', top_header_text_color ?? '#ffffff',
+        social_facebook ?? '#', social_twitter ?? '#', social_linkedin ?? '#', social_instagram ?? '#', social_youtube ?? '#',
+        top_header_links ?? '[]', show_main_header ?? 1,
+        univ_tagline ?? 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
+        accreditation_logos ?? '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]'
+      ]
     );
     const updated = await query.get('SELECT * FROM settings WHERE id = 1');
     res.json({ success: true, settings: updated });
@@ -665,7 +697,8 @@ app.delete('/api/news/:id', async (req, res) => {
 // --- CUSTOM PAGES API ---
 app.get('/api/custom-pages', async (req, res) => {
   try {
-    const pages = await query.all('SELECT id, title, parent_menu, menu_type, updated_at FROM custom_pages ORDER BY title ASC');
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    const pages = await query.all('SELECT id, title, parent_menu, menu_type, is_visible, updated_at FROM custom_pages ORDER BY title ASC');
     res.json(pages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -674,6 +707,7 @@ app.get('/api/custom-pages', async (req, res) => {
 
 app.get('/api/custom-pages/:id', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     const page = await query.get('SELECT * FROM custom_pages WHERE id = ?', [req.params.id]);
     if (!page) {
       return res.status(404).json({ error: 'Page not found' });
@@ -685,7 +719,7 @@ app.get('/api/custom-pages/:id', async (req, res) => {
 });
 
 app.post('/api/custom-pages', async (req, res) => {
-  const { id, title, content, file_url, file_name, parent_menu, menu_type } = req.body;
+  const { id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible } = req.body;
   if (!id || !title) {
     return res.status(400).json({ error: 'Page ID and Title are required' });
   }
@@ -699,9 +733,9 @@ app.post('/api/custom-pages', async (req, res) => {
       return res.status(400).json({ error: 'A page with this ID/Slug already exists' });
     }
     await query.run(
-      `INSERT INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [id, title, content || '', file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child']
+      `INSERT INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, title, content || '', file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1]
     );
     res.json({ success: true, message: 'Page created successfully' });
   } catch (err) {
@@ -710,13 +744,13 @@ app.post('/api/custom-pages', async (req, res) => {
 });
 
 app.put('/api/custom-pages/:id', async (req, res) => {
-  const { title, content, file_url, file_name, parent_menu, menu_type } = req.body;
+  const { title, content, file_url, file_name, parent_menu, menu_type, show_slider, slider_slides, is_visible } = req.body;
   try {
     await query.run(
       `UPDATE custom_pages 
-       SET title = ?, content = ?, file_url = ?, file_name = ?, parent_menu = ?, menu_type = ?, updated_at = CURRENT_TIMESTAMP 
+       SET title = ?, content = ?, file_url = ?, file_name = ?, parent_menu = ?, menu_type = ?, show_slider = ?, slider_slides = ?, is_visible = ?, updated_at = CURRENT_TIMESTAMP 
        WHERE id = ?`,
-      [title, content, file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', req.params.id]
+      [title, content, file_url || null, file_name || null, parent_menu || 'about', menu_type || 'child', show_slider ? 1 : 0, slider_slides || '[]', is_visible !== undefined ? (is_visible ? 1 : 0) : 1, req.params.id]
     );
     res.json({ success: true, message: 'Page updated successfully' });
   } catch (err) {
@@ -726,8 +760,28 @@ app.put('/api/custom-pages/:id', async (req, res) => {
 
 app.delete('/api/custom-pages/:id', async (req, res) => {
   try {
-    await query.run('DELETE FROM custom_pages WHERE id = ?', [req.params.id]);
-    res.json({ success: true, message: 'Page deleted successfully' });
+    const pageId = req.params.id;
+    // Delete page itself, any direct children (where parent_menu = pageId), and any sub-children (where parent_menu is a child of pageId)
+    await query.run(`
+      DELETE FROM custom_pages 
+      WHERE id = ? 
+         OR parent_menu = ? 
+         OR parent_menu IN (SELECT id FROM custom_pages WHERE parent_menu = ?)
+    `, [pageId, pageId, pageId]);
+    res.json({ success: true, message: 'Page and its subpages deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.patch('/api/custom-pages/:id/visibility', async (req, res) => {
+  const { is_visible } = req.body;
+  try {
+    await query.run(
+      'UPDATE custom_pages SET is_visible = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [is_visible ? 1 : 0, req.params.id]
+    );
+    res.json({ success: true, message: 'Visibility updated successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

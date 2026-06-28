@@ -1,0 +1,71 @@
+Application Links
+├── Public Pages (Navbar)
+│   ├── Home
+│   ├── About
+│   │   ├── About Us
+│   │   ├── Committee
+│   │   ├── From HODs/Directors Desk
+│   │   ├── Director of Phy. Edu.
+│   │   ├── Circulars
+│   │   ├── NCTE Mandatory Disclosures
+│   │   └── Facilities
+│   ├── Academic
+│   │   ├── Academic Courses
+│   │   ├── Admissions Notice
+│   │   ├── Curriculum Syllabus
+│   │   └── Academic Results
+│   ├── Student Corner
+│   │   ├── Events
+│   │   ├── Stories
+│   │   ├── Careers
+│   │   ├── Activities
+│   │   ├── Research
+│   │   ├── Projects
+│   │   ├── Sports Calendar
+│   │   ├── Souvenirs
+│   │   ├── Draws
+│   │   └── Results
+│   ├── Placements
+│   ├── Gallery
+│   └── Directory
+├── Dashboards (Sidebar)
+│   ├── Student Dashboard
+│   │   ├── Dashboard Hub
+│   │   ├── My Profile
+│   │   ├── Alumni Directory
+│   │   ├── Mentorship Program
+│   │   ├── Internships & Careers
+│   │   ├── Events Registry
+│   │   └── Digital Student Card
+│   ├── Alumni Dashboard
+│   │   ├── Dashboard Hub
+│   │   ├── Profile Management
+│   │   ├── Alumni Network
+│   │   ├── Post / Apply Jobs
+│   │   ├── Mentorship Requests
+│   │   ├── Alumni Events
+│   │   ├── Donations & Giving
+│   │   └── Digital Alumni Card
+│   └── Admin Dashboard
+│       ├── Dashboard Hub
+│       ├── Verification Center
+│       ├── Create Event
+│       ├── Manage News
+│       ├── Manage Circulars
+│       ├── NCTE Disclosures
+│       ├── Manage Committee
+│       ├── Manage Directors
+│       ├── Manage HODs Desk
+│       ├── Draws & Results
+│       ├── Manage Static pages
+│       ├── Manage Independent Pages
+│       ├── Manage Courses
+│       ├── Manage Admissions
+│       ├── Post / Apply Jobs
+│       ├── Manage Spotlight
+│       ├── Photo Gallery
+│       ├── Placement Manager
+│       ├── Hero Slider
+│       ├── Donations Tracker
+│       ├── Branding Settings
+│       └── System Analytics

@@ -4,6 +4,20 @@ export interface Settings {
   theme_preset: 'crimson' | 'emerald' | 'sapphire' | 'midnight';
   primary_color: string;
   secondary_color: string;
+  show_top_header: number;
+  top_header_phone: string;
+  top_header_email: string;
+  top_header_bg_color: string;
+  top_header_text_color: string;
+  social_facebook: string;
+  social_twitter: string;
+  social_linkedin: string;
+  social_instagram: string;
+  social_youtube: string;
+  top_header_links: string; // JSON string representation
+  show_main_header: number;
+  univ_tagline: string;
+  accreditation_logos: string; // JSON string representation
 }
 
 export interface User {

@@ -32,10 +32,16 @@ const SLIDER_STYLE = `
   0% { opacity: 0; transform: scale(0.92); }
   100% { opacity: 1; transform: scale(1); }
 }
+@keyframes verticalMarquee {
+  0% { transform: translateY(0%); }
+  100% { transform: translateY(-50%); }
+}
 .hero-tag-anim { animation: heroFadeDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.15s; }
 .hero-h1-anim  { animation: heroFadeUp   0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.3s; }
 .hero-p-anim   { animation: heroFadeLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.5s; }
 .hero-cta-anim { animation: heroScaleIn  0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.7s; }
+.vertical-marquee-anim { animation: verticalMarquee 22s linear infinite; }
+.vertical-marquee-anim:hover { animation-play-state: paused; }
 `;
 
 const DEFAULT_SLIDES = [
@@ -322,32 +328,37 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
           {/* ── News & Notices (25%) ─────────────────────────────────────── */}
 
         <section className="lg:col-span-1 glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-5 flex flex-col justify-between h-[520px] overflow-hidden bg-white/70 dark:bg-slate-900/70 shadow-2xl">
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <Newspaper className="w-5 h-5 text-primary" />
-              <h3 className="font-extrabold text-base text-slate-800 dark:text-white tracking-tight uppercase">News & Notices</h3>
+          <div className="flex flex-col h-full overflow-hidden">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div className="flex items-center gap-2">
+                <Newspaper className="w-5 h-5 text-primary" />
+                <h3 className="font-extrabold text-base text-slate-800 dark:text-white tracking-tight uppercase">News & Notices</h3>
+              </div>
+              <span className="text-[9px] font-extrabold bg-primary/10 text-primary px-2 py-0.5 rounded-full uppercase tracking-wider animate-pulse">Live Ticker</span>
             </div>
             
-            {/* Scrollable Container */}
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3.5 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+            {/* Vertical Marquee Container */}
+            <div className="flex-1 overflow-hidden relative group">
               {newsList.length > 0 ? (
-                newsList.map((news) => (
-                  <div 
-                    key={news.id} 
-                    onClick={() => setSelectedNews(news)}
-                    className="p-3.5 bg-slate-50 hover:bg-primary-light/35 dark:bg-slate-950/20 dark:hover:bg-primary/5 rounded-2xl border border-slate-100 dark:border-slate-850 hover:border-primary/30 transition-all cursor-pointer group flex flex-col text-left"
-                  >
-                    <span className="text-[9px] text-primary font-bold uppercase tracking-widest mb-1.5 block">
-                      {new Date(news.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <h4 className="font-extrabold text-xs text-slate-850 dark:text-slate-100 leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                      {news.title}
-                    </h4>
-                    <p className="text-[10px] text-slate-450 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed font-light">
-                      {stripHtml(news.description)}
-                    </p>
-                  </div>
-                ))
+                <div className="vertical-marquee-anim space-y-3.5 pt-1">
+                  {(newsList.length < 4 ? [...newsList, ...newsList, ...newsList, ...newsList] : [...newsList, ...newsList]).map((news, idx) => (
+                    <div 
+                      key={`${news.id}-${idx}`} 
+                      onClick={() => setSelectedNews(news)}
+                      className="p-3.5 bg-slate-50 hover:bg-primary-light/35 dark:bg-slate-950/20 dark:hover:bg-primary/5 rounded-2xl border border-slate-100 dark:border-slate-850 hover:border-primary/30 transition-all cursor-pointer group/card flex flex-col text-left shadow-sm"
+                    >
+                      <span className="text-[9px] text-primary font-bold uppercase tracking-widest mb-1.5 block">
+                        {new Date(news.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                      <h4 className="font-extrabold text-xs text-slate-850 dark:text-slate-100 leading-snug group-hover/card:text-primary transition-colors line-clamp-2">
+                        {news.title}
+                      </h4>
+                      <p className="text-[10px] text-slate-450 dark:text-slate-400 mt-1.5 line-clamp-2 leading-relaxed font-light">
+                        {stripHtml(news.description)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="text-center py-20 text-slate-400">
                   <Newspaper className="w-8 h-8 mx-auto mb-2 text-slate-350 opacity-40 animate-pulse" />

@@ -15,6 +15,7 @@ interface AlumniDashboardProps {
 
 export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, setCurrentTab }) => {
   const [activeSubTab, setActiveSubTab] = useState('dashboard');
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
   const [profile, setProfile] = useState<AlumniProfile | null>(null);
   const [mentorships, setMentorships] = useState<Mentorship[]>([]);
   const [postedJobs, setPostedJobs] = useState<Job[]>([]);
@@ -331,12 +332,107 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
 
         {/* PROFILE TAB */}
         {activeSubTab === 'profile' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-              <User className="w-6 h-6 text-primary" /> Profile Management
-            </h2>
+          <div className="space-y-6">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                  <User className="w-6 h-6 text-primary" /> Profile Management
+                </h2>
+                <button
+                  onClick={() => setIsEditProfileModalOpen(true)}
+                  className="btn-primary py-2 px-5 text-xs font-bold shadow-md shadow-primary/20"
+                >
+                  Edit Profile
+                </button>
+              </div>
 
-            <form onSubmit={handleProfileSubmit} className="space-y-6">
+              {/* Design View of Profile */}
+              <div className="flex flex-col md:flex-row gap-8">
+                <div className="w-full md:w-1/3 flex flex-col items-center text-center">
+                  <img
+                    src={photoUrl || 'https://via.placeholder.com/150'}
+                    alt="Profile"
+                    className="w-36 h-36 rounded-full object-cover shadow-xl border-4 border-white dark:border-slate-800 mb-5"
+                  />
+                  <h3 className="text-xl font-extrabold text-slate-800 dark:text-white">{fullName || 'Unknown User'}</h3>
+                  <p className="text-sm text-primary font-bold mt-1">{designation || 'No Designation'} {company && `at ${company}`}</p>
+                  <p className="text-xs text-slate-500 mt-2 font-medium">{(city || country) ? `${city}${city && country ? ', ' : ''}${country}` : 'No Location Provided'}</p>
+                </div>
+                
+                <div className="w-full md:w-2/3 space-y-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Mobile Number</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{mobile || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">College</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{college || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Graduation Year</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{gradYear || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Industry</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{industry || 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Experience</p>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{experience ? `${experience} Years` : 'N/A'}</p>
+                    </div>
+                    <div className="bg-white/50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">LinkedIn</p>
+                      <p className="text-sm font-bold text-primary truncate">
+                        {linkedin ? <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" className="hover:underline">{linkedin}</a> : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Skills</p>
+                    <div className="flex flex-wrap gap-2">
+                      {skills ? skills.split(',').map((skill, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">
+                          {skill.trim()}
+                        </span>
+                      )) : <span className="text-sm text-slate-500 font-medium">N/A</span>}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/50 dark:bg-slate-900/50 p-5 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Achievements</p>
+                    {achievements ? (
+                      <div className="text-sm text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: achievements }} />
+                    ) : (
+                      <p className="text-sm text-slate-500 font-medium">N/A</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* PROFILE EDIT MODAL */}
+        {isEditProfileModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto pt-20 pb-20">
+            <div className="glass-card w-full max-w-4xl p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 shadow-2xl relative my-auto animate-in fade-in zoom-in-95 duration-200">
+              <button 
+                onClick={() => setIsEditProfileModalOpen(false)} 
+                className="absolute top-6 right-6 p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors bg-slate-100 dark:bg-slate-800 rounded-full"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+              
+              <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-8 border-b border-slate-200 dark:border-slate-800 pb-4">
+                <User className="w-6 h-6 text-primary" /> Edit Profile
+              </h2>
+
+              <form onSubmit={(e) => {
+                 handleProfileSubmit(e);
+                 setIsEditProfileModalOpen(false);
+              }} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Full Name</label>
@@ -468,12 +564,21 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Profile Photo URL</label>
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Profile Photo</label>
                   <input
-                    type="text"
-                    value={photoUrl}
-                    onChange={e => setPhotoUrl(e.target.value)}
-                    className="glass-input text-xs"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setPhotoUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="glass-input text-xs file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
                   />
                 </div>
               </div>
@@ -498,11 +603,17 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
                 />
               </div>
 
-              <button type="submit" className="btn-primary py-3 px-8 text-xs font-bold shadow-md shadow-primary/20">
-                Save Profile Changes
-              </button>
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button type="button" onClick={() => setIsEditProfileModalOpen(false)} className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-700 rounded-xl transition-all">
+                  Cancel
+                </button>
+                <button type="submit" className="btn-primary py-2.5 px-8 text-xs font-bold shadow-md shadow-primary/20">
+                  Save Profile Changes
+                </button>
+              </div>
             </form>
           </div>
+        </div>
         )}
 
         {/* NETWORKING TAB */}

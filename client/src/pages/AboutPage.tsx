@@ -19,6 +19,8 @@ interface CustomPageData {
   file_url: string | null;
   file_name: string | null;
   updated_at: string;
+  show_slider: number;
+  slider_slides: string | null;
 }
 
 interface ResultItem {
@@ -1027,6 +1029,113 @@ const HodsPanel: React.FC<HodsPanelProps> = ({ onSelectMember }) => {
   );
 };
 
+// --- Page Hero Slider for Custom Pages ---
+interface SlideItem {
+  image_url: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  btn_text: string;
+  btn_link: string;
+}
+
+const PageHeroSlider: React.FC<{ slides: SlideItem[] }> = ({ slides }) => {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [fadeIn, setFadeIn] = useState(true);
+
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setFadeIn(false);
+      setTimeout(() => {
+        setActiveIdx(prev => (prev + 1) % slides.length);
+        setFadeIn(true);
+      }, 400);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  if (!slides || slides.length === 0) return null;
+
+  const slide = slides[activeIdx];
+
+  return (
+    <div className="relative w-full rounded-3xl overflow-hidden shadow-2xl mb-2 group" style={{ minHeight: '320px', maxHeight: '480px' }}>
+      {/* Background image */}
+      <div
+        className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
+        style={{
+          backgroundImage: slide.image_url ? `url('${slide.image_url}')` : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+          opacity: fadeIn ? 1 : 0
+        }}
+      />
+      {/* Overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+
+      {/* Content */}
+      <div
+        className={`relative z-10 flex flex-col justify-end sm:justify-center h-full px-8 sm:px-14 py-10 transition-all duration-500 ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}
+        style={{ minHeight: '320px' }}
+      >
+        {slide.subtitle && (
+          <p className="text-xs sm:text-sm font-bold uppercase tracking-widest text-primary-light mb-2 drop-shadow">
+            {slide.subtitle}
+          </p>
+        )}
+        {slide.title && (
+          <h2 className="text-2xl sm:text-4xl font-extrabold text-white drop-shadow-lg leading-tight mb-3">
+            {slide.title}
+          </h2>
+        )}
+        {slide.description && (
+          <p className="text-sm sm:text-base text-white/80 max-w-xl mb-5 leading-relaxed drop-shadow">
+            {slide.description}
+          </p>
+        )}
+        {slide.btn_text && slide.btn_link && (
+          <a
+            href={slide.btn_link.startsWith('http') ? slide.btn_link : '#'}
+            className="inline-flex items-center gap-2 btn-primary text-sm font-bold px-6 py-2.5 shadow-xl w-fit"
+          >
+            {slide.btn_text} <ChevronRight className="w-4 h-4" />
+          </a>
+        )}
+      </div>
+
+      {/* Navigation dots */}
+      {slides.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { setFadeIn(false); setTimeout(() => { setActiveIdx(i); setFadeIn(true); }, 300); }}
+              className={`rounded-full transition-all cursor-pointer ${i === activeIdx ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50 hover:bg-white/80'}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Left/Right arrows */}
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={() => { setFadeIn(false); setTimeout(() => { setActiveIdx(prev => (prev - 1 + slides.length) % slides.length); setFadeIn(true); }, 300); }}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/60 text-white rounded-full w-9 h-9 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5 rotate-180" />
+          </button>
+          <button
+            onClick={() => { setFadeIn(false); setTimeout(() => { setActiveIdx(prev => (prev + 1) % slides.length); setFadeIn(true); }, 300); }}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/60 text-white rounded-full w-9 h-9 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 // --- Main Component ---
 
 export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }) => {
@@ -1044,7 +1153,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   const [customPages, setCustomPages] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/custom-pages')
+    fetch(`http://localhost:5001/api/custom-pages?_t=${Date.now()}`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setCustomPages(data))
       .catch(err => console.warn('AboutPage failed to fetch custom pages:', err));
@@ -1052,20 +1161,99 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
 
   const dynamicPages = customPages
     .filter((p: any) => !ABOUT_PAGES.some(sp => sp.id === p.id))
-    .map((p: any) => ({
-      id: p.id,
-      group: p.parent_menu || 'about',
-      label: p.title,
-      icon: FileText,
-      color: p.parent_menu === 'academic' ? 'from-purple-600 to-indigo-600' : p.parent_menu === 'student' ? 'from-orange-500 to-red-600' : p.parent_menu === 'none' ? 'from-slate-600 to-gray-700' : 'from-blue-600 to-indigo-700',
-      badge: p.parent_menu === 'academic' ? 'Programs' : p.parent_menu === 'student' ? 'Activities' : p.parent_menu === 'none' ? 'Overview' : 'Custom Page',
-      description: `Custom page for ${p.title}`
-    }));
+    .map((p: any) => {
+      // Determine the group for sidebar visibility
+      let group = p.parent_menu || 'about';
+      // standalone, parent, sub-parent, and sub-child pages have no sidebar
+      if (p.menu_type === 'standalone' || p.menu_type === 'parent' || p.parent_menu === 'none') {
+        group = 'standalone';
+      }
+      if (p.menu_type === 'sub-parent' || p.menu_type === 'sub-child') {
+        group = 'standalone'; // no sidebar for nested custom pages
+      }
+      const colorMap: Record<string, string> = {
+        'academic': 'from-purple-600 to-indigo-600',
+        'student': 'from-orange-500 to-red-600',
+        'none': 'from-slate-600 to-gray-700',
+        'standalone': 'from-slate-600 to-gray-700',
+      };
+      const badgeMap: Record<string, string> = {
+        'academic': 'Programs',
+        'student': 'Activities',
+        'none': 'Overview',
+        'standalone': 'Overview',
+      };
+      return {
+        id: p.id,
+        group,
+        label: p.title,
+        icon: FileText,
+        color: colorMap[group] || 'from-blue-600 to-indigo-700',
+        badge: badgeMap[group] || 'Custom Page',
+        description: `Custom page for ${p.title}`
+      };
+    });
 
   const allPages = [...ABOUT_PAGES, ...dynamicPages];
   const meta = allPages.find((p) => p.id === subpageId) ?? allPages[0] ?? ABOUT_PAGES[0];
   const Icon = meta.icon;
-  const hasSidebar = meta.group !== 'none' && meta.group !== 'standalone';
+
+  // Compute active dynamic page custom hierarchy
+  const currentPage = customPages.find(p => p.id === subpageId);
+  let topParentId: string | null = null;
+  let customSidebarItems: any[] = [];
+  let isCustomHierarchy = false;
+
+  if (currentPage) {
+    if (currentPage.menu_type === 'parent') {
+      topParentId = currentPage.id;
+    } else if (currentPage.menu_type === 'child' || currentPage.menu_type === 'sub-parent') {
+      topParentId = currentPage.parent_menu;
+    } else if (currentPage.menu_type === 'sub-child') {
+      const parentPage = customPages.find(p => p.id === currentPage.parent_menu);
+      topParentId = parentPage ? parentPage.parent_menu : currentPage.parent_menu;
+    }
+
+    if (topParentId && topParentId !== 'none') {
+      isCustomHierarchy = true;
+      // Get all child/sub-parent pages under this topParentId
+      const lvl2Pages = customPages.filter(p => 
+        (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === topParentId
+      );
+      
+      lvl2Pages.forEach(lvl2 => {
+        customSidebarItems.push({
+          id: lvl2.id,
+          label: lvl2.title,
+          icon: FileText,
+          menu_type: lvl2.menu_type,
+          tabId: `custmenu__${topParentId}-${lvl2.id}`,
+          isSubChild: false
+        });
+        
+        if (lvl2.menu_type === 'sub-parent') {
+          const lvl3Pages = customPages.filter(p => 
+            p.menu_type === 'sub-child' && p.parent_menu === lvl2.id
+          );
+          lvl3Pages.forEach(lvl3 => {
+            customSidebarItems.push({
+              id: lvl3.id,
+              label: lvl3.title,
+              icon: ChevronRight,
+              menu_type: lvl3.menu_type,
+              tabId: `custmenu__${topParentId}-${lvl2.id}-${lvl3.id}`,
+              isSubChild: true
+            });
+          });
+        }
+      });
+    }
+  }
+
+  const hasSidebar = isCustomHierarchy ? (customSidebarItems.length > 0) : (meta.group !== 'none' && meta.group !== 'standalone');
+  const topParentPage = isCustomHierarchy ? customPages.find(p => p.id === topParentId) : null;
+
+
 
   const isResults = subpageId === 'results';
   const isDraws = subpageId === 'draws';
@@ -1085,12 +1273,18 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
     setLoading(true);
     setError(null);
     setPageData(null);
-    fetch(`http://localhost:5001/api/custom-pages/${subpageId}`)
+    fetch(`http://localhost:5001/api/custom-pages/${subpageId}?_t=${Date.now()}`)
       .then(res => {
         if (!res.ok) throw new Error('Content not yet published by administrator.');
         return res.json();
       })
-      .then(data => { setPageData(data); setLoading(false); })
+      .then(data => {
+        if (data && data.is_visible === 0) {
+          throw new Error('Content not yet published by administrator.');
+        }
+        setPageData(data);
+        setLoading(false);
+      })
       .catch(err => { setError(err.message); setLoading(false); });
   }, [subpageId]);
 
@@ -1145,37 +1339,75 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
 
         {/* Left Sidebar Navigation */}
         {hasSidebar && (
-          <aside className="lg:col-span-1">
-            <div className="glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden sticky top-24">
-              <nav className="p-2 space-y-0.5">
-                {allPages.filter(page => page.group === meta.group).map((page) => {
-                  const PageIcon = page.icon;
-                  const isActive = page.id === subpageId;
-                  return (
-                    <button key={page.id}
-                      onClick={() => {
-                        if (page.id === 'events') {
-                          setCurrentTab?.('events');
-                        } else if (page.id === 'stories') {
-                          setCurrentTab?.('stories');
-                        } else if (page.id === 'careers') {
-                          setCurrentTab?.('jobs');
-                        } else {
-                          setCurrentTab?.(`${page.group}-${page.id}`);
-                        }
-                      }}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
-                        isActive ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
-                      }`}
-                    >
-                      <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
-                        <PageIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
-                      </span>
-                      <span className="text-left leading-tight">{page.label}</span>
-                      {isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
-                    </button>
-                  );
-                })}
+          <aside className="lg:col-span-1 animate-in fade-in slide-in-from-left-4 duration-300">
+            <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden sticky top-24 shadow-lg shadow-slate-100/50 dark:shadow-none">
+              {isCustomHierarchy && topParentPage && (
+                <div className="px-5 py-4 bg-secondary text-white border-b border-white/10">
+                  <p className="text-[9px] font-extrabold uppercase tracking-widest text-white/50">{topParentPage.title}</p>
+                  <p className="text-xs font-bold text-white mt-0.5">Section Menu</p>
+                </div>
+              )}
+              <nav className="p-3 space-y-1">
+                {isCustomHierarchy ? (
+                  customSidebarItems.map((item) => {
+                    const isActive = item.id === subpageId;
+                    const PageIcon = item.icon;
+                    return (
+                      <button key={item.id}
+                        onClick={() => {
+                          setCurrentTab?.(item.tabId);
+                        }}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all group ${
+                          isActive 
+                            ? 'bg-primary text-white font-bold shadow-md shadow-primary/20' 
+                            : 'text-slate-650 dark:text-slate-350 hover:bg-primary/10 hover:text-primary font-semibold'
+                        } ${item.isSubChild ? 'pl-8 text-xs' : 'text-sm'}`}
+                      >
+                        <span className={`rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                          item.isSubChild
+                            ? 'w-5 h-5'
+                            : (isActive ? 'w-7 h-7 bg-white/20' : 'w-7 h-7 bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10')
+                        }`}>
+                          <PageIcon className={item.isSubChild 
+                            ? `w-3 h-3 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-primary'}`
+                            : `w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`
+                          } />
+                        </span>
+                        <span className="text-left leading-tight truncate">{item.label}</span>
+                        {isActive && <ChevronRight className="w-3.5 h-3.5 ml-auto text-white/70 shrink-0" />}
+                      </button>
+                    );
+                  })
+                ) : (
+                  allPages.filter(page => page.group === meta.group).map((page) => {
+                    const PageIcon = page.icon;
+                    const isActive = page.id === subpageId;
+                    return (
+                      <button key={page.id}
+                        onClick={() => {
+                          if (page.id === 'events') {
+                            setCurrentTab?.('events');
+                          } else if (page.id === 'stories') {
+                            setCurrentTab?.('stories');
+                          } else if (page.id === 'careers') {
+                            setCurrentTab?.('jobs');
+                          } else {
+                            setCurrentTab?.(`${page.group}-${page.id}`);
+                          }
+                        }}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all group ${
+                          isActive ? 'bg-primary text-white shadow-md shadow-primary/20' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary'
+                        }`}
+                      >
+                        <span className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${isActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>
+                          <PageIcon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'}`} />
+                        </span>
+                        <span className="text-left leading-tight">{page.label}</span>
+                        {isActive && <ChevronRight className="w-4 h-4 ml-auto text-white/70" />}
+                      </button>
+                    );
+                  })
+                )}
               </nav>
             </div>
           </aside>
@@ -1362,6 +1594,14 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
 
               {!loading && pageData && (
                 <>
+                  {/* ── HERO SLIDER ── */}
+                  {pageData.show_slider === 1 && (() => {
+                    let slides: any[] = [];
+                    try { slides = JSON.parse(pageData.slider_slides || '[]'); } catch {}
+                    if (!Array.isArray(slides) || slides.length === 0) return null;
+                    return <PageHeroSlider slides={slides} />;
+                  })()}
+
                   <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden">
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
                       <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center shadow-sm`}>

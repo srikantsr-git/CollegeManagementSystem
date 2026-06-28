@@ -45,7 +45,10 @@ export const adminItems: NavigationItem[] = [
   { id: 'directors-manager', label: 'Manage Directors', description: 'Manage Physical Education Directors index', icon: Users },
   { id: 'hods-manager', label: 'Manage HODs Desk', description: 'Update messages from HODs and Directors desk', icon: Users },
   { id: 'results-manager', label: 'Draws & Results', description: 'Publish sports tournament results and schedules', icon: Trophy },
-  { id: 'about-manager', label: 'Manage About Pages', description: 'Edit about pages and core institutional content', icon: FileText },
+  { id: 'about-manager', label: 'Manage Static pages', description: 'Manage static pages and core information under About', icon: FileText },
+  { id: 'academic-pages-manager', label: 'Manage Academic Pages', description: 'Manage custom pages under the Academic menu dropdown', icon: FileText },
+  { id: 'student-pages-manager', label: 'Manage Student Pages', description: 'Manage custom pages under the Student Corner menu dropdown', icon: FileText },
+  { id: 'standalone-pages-manager', label: 'Manage Independent Pages', description: 'Manage custom standalone pages not under any dropdown', icon: SlidersHorizontal },
   { id: 'courses-manager', label: 'Manage Courses', description: 'Manage undergraduate and postgraduate courses', icon: BookOpen },
   { id: 'admission-manager', label: 'Manage Admissions', description: 'Manage admission announcements and eligibility details', icon: UserCheck },
   { id: 'jobs', label: 'Post / Apply Jobs', description: 'Moderate and review posted career opportunities', icon: Briefcase },
@@ -67,32 +70,90 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab }) => {
   const menuItems = role === 'admin' ? adminItems : role === 'alumni' ? alumniItems : studentItems;
 
+  const adminSections = [
+    {
+      title: "Core Portal Controls",
+      items: ["dashboard", "approvals", "analytics", "branding"]
+    },
+    {
+      title: "About Us Dropdown Menu",
+      items: ["about-manager", "committee-manager", "directors-manager", "hods-manager", "circulars-manager", "ncte-manager"]
+    },
+    {
+      title: "Academic Dropdown Menu",
+      items: ["academic-pages-manager", "courses-manager", "admission-manager"]
+    },
+    {
+      title: "Student Corner Dropdown",
+      items: ["student-pages-manager", "events-manager", "news-manager", "results-manager"]
+    },
+    {
+      title: "Independent Dropdowns & Links",
+      items: ["standalone-pages-manager", "gallery-manager", "placement-manager", "slider-manager", "jobs", "donations-manager"]
+    }
+  ];
+
   return (
     <aside className="w-full md:w-64 glass-card p-4 rounded-2xl flex flex-col gap-2 h-fit md:sticky md:top-28">
       <div className="px-3 py-2.5 mb-2 rounded-xl bg-primary-light/30 dark:bg-primary/5 text-primary text-xs font-extrabold uppercase tracking-widest text-center">
         {role} Dashboard
       </div>
 
-      <nav className="space-y-1">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                isActive
-                  ? 'bg-primary text-white shadow-md shadow-primary/10'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:text-primary'
-              }`}
-            >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-primary'}`} />
-              <span>{item.label}</span>
-            </button>
-          );
-        })}
-      </nav>
+      {role === 'admin' ? (
+        <div className="space-y-4 text-left max-h-[75vh] overflow-y-auto pr-1 select-none">
+          {adminSections.map((section) => {
+            const sectionItems = adminItems.filter(item => section.items.includes(item.id));
+            return (
+              <div key={section.title} className="space-y-1">
+                <div className="px-2 pt-2 pb-1 text-[9px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 border-b border-slate-100/50 dark:border-slate-800/30 mb-1">
+                  {section.title}
+                </div>
+                {sectionItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? 'bg-primary text-white shadow-md shadow-primary/10'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:text-primary'
+                      }`}
+                      title={item.description}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <nav className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ${
+                  isActive
+                    ? 'bg-primary text-white shadow-md shadow-primary/10'
+                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/40 hover:text-primary'
+                }`}
+                title={item.description}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500'}`} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+      )}
     </aside>
   );
 };
