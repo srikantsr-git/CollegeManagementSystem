@@ -27,6 +27,12 @@ export interface Settings {
   contact_email1?: string;
   contact_email2?: string;
   contact_map_query?: string;
+  zonal_features?: string; // JSON string representation
+  zonal_features_header?: string;
+  zonal_features_desc?: string;
+  show_company_slider?: number;
+  company_slider_title?: string;
+  company_slider_desc?: string;
 }
 
 export interface User {

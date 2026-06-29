@@ -68,6 +68,7 @@ const MainAppContent: React.FC = () => {
         'hods': 'hods-manager',
         'director': 'directors-manager',
         'circulars': 'circulars-manager',
+        'news_notices': 'news-manager',
         'ncte': 'ncte-manager',
         'courses': 'courses-manager',
         'admission': 'admission-manager',

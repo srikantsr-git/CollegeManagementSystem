@@ -63,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
     hods: Home,
     director: Activity,
     circulars: FileText,
+    news_notices: Newspaper,
     ncte: ShieldCheck,
     facilities: Building2,
     courses: BookOpen,

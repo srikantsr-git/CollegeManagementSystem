@@ -47,6 +47,7 @@ const getTargetTabForPage = (pageId: string, parentMenu: string, menuType: strin
     'careers': 'jobs',
     'draws': 'results-manager',
     'results': 'results-manager',
+    'news_notices': 'news-manager',
     'contact': 'branding',
   };
 
@@ -74,7 +75,7 @@ const getTargetTabForPage = (pageId: string, parentMenu: string, menuType: strin
 // System-locked pages which cannot be deleted or have their Slugs modified
 const SYSTEM_PAGE_IDS = [
   'about', 'academic', 'student', 'directory', 'gallery', 'placements', 'donations', 'contact',
-  'about_us', 'committee', 'hods', 'director', 'circulars', 'ncte', 'facilities',
+  'about_us', 'committee', 'hods', 'director', 'circulars', 'news_notices', 'ncte', 'facilities',
   'courses', 'admission', 'syllabus', 'academic_results',
   'events', 'stories', 'careers', 'activities', 'research', 'projects', 'calendar', 'souvenirs', 'draws', 'results'
 ];

@@ -45,6 +45,7 @@ const ABOUT_PAGES = [
   { id: 'hods',             group: 'about',   label: 'From HODs/Directors Desk',   icon: Home,            color: 'from-sky-600 to-blue-700',       badge: 'Leadership',   description: 'Messages from Heads of Departments and Directors.' },
   { id: 'director',         group: 'about',   label: 'Director of Phy. Edu.',      icon: Activity,        color: 'from-violet-600 to-purple-700',  badge: 'Leadership',   description: 'Message and profile of the Director of Physical Education.' },
   { id: 'circulars',        group: 'about',   label: 'Circulars',                  icon: FileText,        color: 'from-amber-500 to-orange-600',   badge: 'Notices',      description: 'Official circulars and administrative announcements.' },
+  { id: 'news_notices',     group: 'about',   label: 'News and Notices',           icon: Newspaper,       color: 'from-blue-500 to-indigo-650',    badge: 'Announcements',description: 'Official news updates, events and university announcements.' },
   { id: 'ncte',             group: 'about',   label: 'NCTE Mandatory Disclosures', icon: ShieldCheck,     color: 'from-emerald-600 to-teal-700',   badge: 'Regulatory',   description: 'NCTE compliance, recognition order, and regulatory disclosures.' },
   { id: 'facilities',       group: 'about',   label: 'Facilities',                 icon: Building2,       color: 'from-slate-600 to-gray-700',     badge: 'Infrastructure',description: 'Sports and academic facilities available on campus.' },
   { id: 'courses',          group: 'academic',label: 'Academic Courses',           icon: BookOpen,        color: 'from-blue-600 to-cyan-600',      badge: 'Programs',     description: 'Teacher training and sports science degrees offered.' },
@@ -779,7 +780,201 @@ const CircularsPanel: React.FC = () => {
   );
 };
 
-// â”€â”€â”€ NCTE Disclosures Panel Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── News & Notices Feed Component ─────────────────────────────────────────────
+const NewsNoticesPanel: React.FC = () => {
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('newest');
+
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/news')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => { setNewsList(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <p className="text-sm text-slate-500 animate-pulse">Loading news and notices...</p>
+    </div>
+  );
+
+  let processed = newsList.filter(n => {
+    const query = searchQuery.toLowerCase();
+    return (n.title || '').toLowerCase().includes(query) || (n.description || '').toLowerCase().includes(query);
+  });
+
+  if (filterType === 'with-downloads') {
+    processed = processed.filter(n => n.file_url);
+  } else if (filterType === 'without-downloads') {
+    processed = processed.filter(n => !n.file_url);
+  }
+
+  processed = [...processed].sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+    if (filterType === 'oldest') {
+      return dateA - dateB;
+    }
+    return dateB - dateA;
+  });
+
+  const totalItems = processed.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = processed.slice(indexOfFirstItem, indexOfLastItem);
+
+  return (
+    <div className="space-y-5 text-left">
+      {newsList.length === 0 ? (
+        <div className="text-center py-14 space-y-3">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+            <Newspaper className="w-7 h-7 text-blue-500" />
+          </div>
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No news or notices published yet</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Check back soon for official announcements, notices and news.</p>
+        </div>
+      ) : (
+        <>
+          {/* Search bar & filter dropdown */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search news & notices..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0">
+              <span>Filter & Sort:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="with-downloads">With Attachments</option>
+                <option value="without-downloads">Without Attachments</option>
+              </select>
+            </div>
+          </div>
+
+          {processed.length === 0 ? (
+            <div className="text-center py-14 space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center animate-pulse">
+                <Search className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No matches found</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">Try checking your spelling or searching for a different keyword.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {currentItems.map((n) => (
+                <div key={n.id}
+                  className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
+                >
+                  <div className="flex flex-col md:flex-row gap-5 p-5">
+                    {n.image_url && (
+                      <div className="w-full md:w-36 h-24 rounded-xl overflow-hidden shrink-0 border border-slate-100 dark:border-slate-850">
+                        <img src={n.image_url} alt={n.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    )}
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                          <Clock className="w-3 h-3" />
+                          {new Date(n.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{n.title}</h3>
+
+                      {n.description && (
+                        <div className="text-xs text-slate-555 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: n.description }} />
+                      )}
+
+                      {n.file_url && n.file_name && (
+                        <div className="mt-3 flex items-center gap-2.5 flex-wrap">
+                          <a href={n.file_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-300 hover:bg-primary hover:text-slate-900 transition-all">
+                            <ExternalLink className="w-3 h-3" /> View Notice File
+                          </a>
+                          <a href={n.file_url} download={n.file_name}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-slate-900 transition-all">
+                            <Download className="w-3 h-3" /> Download
+                          </a>
+                          <span className="text-[10px] text-slate-400 truncate">{n.file_name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-200/50 dark:border-slate-800/40 text-xs font-semibold text-slate-500">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-slate-900 disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-primary text-slate-900 font-extrabold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-450 hover:bg-primary hover:text-slate-900'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-slate-900 disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─── NCTE Disclosures Panel Component ──────────────────────────────────────────
 const NctePanel: React.FC = () => {
   const [ncte, setNcte] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1973,6 +2168,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   const isDraws = subpageId === 'draws';
   const isCourses = subpageId === 'courses';
   const isCirculars = subpageId === 'circulars';
+  const isNewsNotices = subpageId === 'news_notices';
   const isCommittee = subpageId === 'committee';
   const isDirector = subpageId === 'director';
   const isNcte = subpageId === 'ncte';
@@ -1987,7 +2183,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   useEffect(() => {
     setSelectedMember(null);
     if (
-      isResults || isDraws || isCourses || isCirculars || isCommittee || 
+      isResults || isDraws || isCourses || isCirculars || isNewsNotices || isCommittee || 
       isDirector || isNcte || isHods || isAdmission || isGallery || 
       isPlacements || isDonations || isContact || isCareers
     ) { 
@@ -2213,6 +2409,24 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
             </div>
           )}
 
+          {/* ——— NEWS & NOTICES: Dynamic Feed ——— */}
+          {isNewsNotices && (
+            <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden">
+              <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-650 flex items-center justify-center shadow-sm">
+                  <Newspaper className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-sm text-slate-800 dark:text-white">News &amp; Notices Feed</h2>
+                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Official Announcements</p>
+                </div>
+              </div>
+              <div className="p-6">
+                <NewsNoticesPanel />
+              </div>
+            </div>
+          )}
+
           {/* ——— NCTE: Dynamic Feed ——— */}
           {isNcte && (
             <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden">
@@ -2315,7 +2529,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
           )}
 
           {/* ── OTHER PAGES: Custom Page Content ── */}
-          {!isResults && !isDraws && !isCourses && !isCirculars && !isCommittee && !isDirector && !isNcte && !isAdmission && !isHods && !isGallery && !isPlacements && !isDonations && !isContact && !isCareers && (
+          {!isResults && !isDraws && !isCourses && !isCirculars && !isNewsNotices && !isCommittee && !isDirector && !isNcte && !isAdmission && !isHods && !isGallery && !isPlacements && !isDonations && !isContact && !isCareers && (
             <>
               {loading && (
                 <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-16 flex flex-col items-center justify-center gap-4">

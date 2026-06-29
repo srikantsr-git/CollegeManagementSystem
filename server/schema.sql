@@ -283,21 +283,22 @@ CREATE TABLE IF NOT EXISTS custom_pages (
 );
 
 -- Seed Initial News
-INSERT OR REPLACE INTO news (id, title, description, date, image_url)
+INSERT OR IGNORE INTO news (id, title, description, date, image_url)
 VALUES (1, 'Apex University Launches Center for Artificial Intelligence', 'A state-of-the-art AI laboratory funded by a generous $5M donation from our tech alumni panel.', '2026-06-18', 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=500&q=80');
 
-INSERT OR REPLACE INTO news (id, title, description, date, image_url)
+INSERT OR IGNORE INTO news (id, title, description, date, image_url)
 VALUES (2, 'Annual Alumni Awards Ceremony Announced', 'Nominate outstanding graduates for leadership, innovation, and community service. Submissions close July 31.', '2026-05-30', 'https://images.unsplash.com/photo-1531058020387-3be344559be6?w=500&q=80');
 
-INSERT OR REPLACE INTO news (id, title, description, date, image_url)
+INSERT OR IGNORE INTO news (id, title, description, date, image_url)
 VALUES (3, 'New Sports Complex Construction Begins', 'Construction has officially started on our new multi-purpose sports complex, sponsored by class of 2014.', '2026-06-10', 'https://images.unsplash.com/photo-1541252260730-0412e8e2108e?w=500&q=80');
 
 -- Seed default custom pages
-INSERT OR REPLACE INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type) VALUES 
+INSERT OR IGNORE INTO custom_pages (id, title, content, file_url, file_name, parent_menu, menu_type) VALUES 
 ('about_us', 'About Us', 'Apex University Sports Committee promotes athletic excellence, organizes collegiate tournaments, and strengthens community health through a variety of sports leagues, events, and training programs.', NULL, NULL, 'about', 'child'),
 ('committee', 'Committee', 'The Pune City Sports Committee comprises distinguished physical education directors, principals, and coordinators dedicated to organizing zonals, state-level selections, and governing collegiate sports events.', NULL, NULL, 'about', 'child'),
 ('director', 'Director of Phy. Edu.', 'A message from the Director of Physical Education: "Our vision is to build a robust sports ecosystem that encourages high participation, fosters teamwork, and produces state and national-level champions."', NULL, NULL, 'about', 'child'),
 ('circulars', 'Circulars', 'Download the latest administrative circulars, guidelines for tournament registration, eligibility forms, and official announcements here.', NULL, NULL, 'about', 'child'),
+('news_notices', 'News and Notices', 'Get all the latest news, notices, and updates regarding physical education, university sports events, schedules, circular decisions, and notifications.', NULL, NULL, 'about', 'child'),
 ('souvenirs', 'Souvenirs', 'Browse our digital souvenirs, annual sports magazines, history of trophies, and memorable group photographs from previous collegiate meets.', NULL, NULL, 'student', 'child'),
 ('calendar', 'Sports Calendar', 'Schedule of all upcoming inter-collegiate matches, athletics selections, and zone-level tournaments for the academic year 2026.', NULL, NULL, 'student', 'child'),
 ('draws', 'Sports Draws', 'Check tournament bracket draws, match timetables, and team schedules for collegiate matches.', NULL, NULL, 'student', 'child'),
@@ -363,7 +364,7 @@ CREATE TABLE IF NOT EXISTS ncte_disclosures (
 );
 
 -- Seed default NCTE disclosures
-INSERT OR REPLACE INTO ncte_disclosures (id, title, description, date, file_url, file_name) VALUES
+INSERT OR IGNORE INTO ncte_disclosures (id, title, description, date, file_url, file_name) VALUES
 (1, 'NCTE Mandatory Disclosure Report 2026', 'Official mandatory disclosure details, compliance details, and institutional data for NCTE teacher education programs.', '2026-06-10', NULL, NULL),
 (2, 'Institutional Affiliation & NCTE Recognition Order', 'Official recognition order issued by Western Regional Committee (WRC) NCTE along with college affiliation documents.', '2026-06-20', NULL, NULL);
 

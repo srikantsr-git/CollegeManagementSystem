@@ -50,8 +50,9 @@ function initializeDatabase() {
             { id: 'hods', title: 'From HODs/Directors Desk', parent_menu: 'about', menu_type: 'child', sort_order: 3 },
             { id: 'director', title: 'Director of Phy. Edu.', parent_menu: 'about', menu_type: 'child', sort_order: 4 },
             { id: 'circulars', title: 'Circulars', parent_menu: 'about', menu_type: 'child', sort_order: 5 },
-            { id: 'ncte', title: 'NCTE Mandatory Disclosures', parent_menu: 'about', menu_type: 'child', sort_order: 6 },
-            { id: 'facilities', title: 'Facilities', parent_menu: 'about', menu_type: 'child', sort_order: 7 },
+            { id: 'news_notices', title: 'News and Notices', parent_menu: 'about', menu_type: 'child', sort_order: 6 },
+            { id: 'ncte', title: 'NCTE Mandatory Disclosures', parent_menu: 'about', menu_type: 'child', sort_order: 7 },
+            { id: 'facilities', title: 'Facilities', parent_menu: 'about', menu_type: 'child', sort_order: 8 },
             { id: 'courses', title: 'Academic Courses', parent_menu: 'academic', menu_type: 'child', sort_order: 1 },
             { id: 'admission', title: 'Admissions Notice', parent_menu: 'academic', menu_type: 'child', sort_order: 2 },
             { id: 'syllabus', title: 'Curriculum Syllabus', parent_menu: 'academic', menu_type: 'child', sort_order: 3 },
@@ -71,13 +72,7 @@ function initializeDatabase() {
           seedMenus.forEach(m => {
             db.run(
               "INSERT OR IGNORE INTO custom_pages (id, title, content, parent_menu, menu_type, sort_order, is_visible) VALUES (?, ?, '', ?, ?, ?, 1)",
-              [m.id, m.title, m.parent_menu, m.menu_type, m.sort_order],
-              () => {
-                db.run(
-                  "UPDATE custom_pages SET parent_menu = ?, menu_type = ?, sort_order = ?, title = ? WHERE id = ?",
-                  [m.parent_menu, m.menu_type, m.sort_order, m.title, m.id]
-                );
-              }
+              [m.id, m.title, m.parent_menu, m.menu_type, m.sort_order]
             );
           });
         });
@@ -93,6 +88,9 @@ function initializeDatabase() {
         db.run("ALTER TABLE settings ADD COLUMN social_youtube TEXT DEFAULT '#';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN top_header_links TEXT DEFAULT '[]';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN show_main_header INTEGER DEFAULT 1;", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN zonal_features TEXT DEFAULT '[]';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN zonal_features_header TEXT DEFAULT 'Core Zonal Features';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN zonal_features_desc TEXT DEFAULT 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN univ_tagline TEXT DEFAULT 'Autonomous Institution | Approved by AICTE | Permanently Affiliated';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN accreditation_logos TEXT DEFAULT '[]';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN contact_intro TEXT DEFAULT 'We, the Department of Sports & Physical Education, are always ready to provide information and answers to queries of students. We aim to resolve basic and common questions about courses and other related information.';", () => {});
@@ -104,6 +102,9 @@ function initializeDatabase() {
         db.run("ALTER TABLE settings ADD COLUMN contact_email1 TEXT DEFAULT 'dpe@unipune.ac.in';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN contact_email2 TEXT DEFAULT 'dpeadmin@unipune.ac.in';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN contact_map_query TEXT DEFAULT 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN show_company_slider INTEGER DEFAULT 1;", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN company_slider_title TEXT DEFAULT 'Our Placement Partners & Recruiters';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN company_slider_desc TEXT DEFAULT 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.';", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_url TEXT;", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_name TEXT;", () => {});
         db.run("ALTER TABLE directors ADD COLUMN profile_pdf_url TEXT;", () => {});

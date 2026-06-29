@@ -13,6 +13,17 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.get('/api/settings', async (req, res) => {
   try {
     const settings = await query.get('SELECT * FROM settings WHERE id = 1');
+    if (settings) {
+      if (!settings.zonal_features || settings.zonal_features === '[]') {
+        settings.zonal_features = '[{"id":1,"image":"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&auto=format&fit=crop&q=80","title":"Inter-Collegiate Tournaments","description":"Organizing prestigious zonal, inter-zonal, and state-level sports competitions for student-athletes.","tag":"Competitions"},{"id":2,"image":"https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80","title":"Sports Calendar & Schedules","description":"Access accurate schedules, entry dates, brackets, and fixtures for the entire academic year.","tag":"Schedules"},{"id":3,"image":"https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80","title":"Dynamic Results Portal","description":"Real-time updates of tournament standings, team rosters, scoreboards, and merit notifications.","tag":"Real-Time Updates"},{"id":4,"image":"https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80","title":"Alumni & Sports Mentorship","description":"Connecting champion alumni with current athletes for career guidance, training support, and placements.","tag":"Community"}]';
+      }
+      if (!settings.zonal_features_header) {
+        settings.zonal_features_header = 'Core Zonal Features';
+      }
+      if (!settings.zonal_features_desc) {
+        settings.zonal_features_desc = 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.';
+      }
+    }
     res.json(settings || {
       univ_name: 'Apex University',
       logo_url: '',
@@ -41,7 +52,13 @@ app.get('/api/settings', async (req, res) => {
       contact_phone2: '+91 - 20 - 25622429',
       contact_email1: 'dpe@unipune.ac.in',
       contact_email2: 'dpeadmin@unipune.ac.in',
-      contact_map_query: 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune'
+      contact_map_query: 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune',
+      zonal_features: '[{"id":1,"image":"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&auto=format&fit=crop&q=80","title":"Inter-Collegiate Tournaments","description":"Organizing prestigious zonal, inter-zonal, and state-level sports competitions for student-athletes.","tag":"Competitions"},{"id":2,"image":"https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80","title":"Sports Calendar & Schedules","description":"Access accurate schedules, entry dates, brackets, and fixtures for the entire academic year.","tag":"Schedules"},{"id":3,"image":"https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80","title":"Dynamic Results Portal","description":"Real-time updates of tournament standings, team rosters, scoreboards, and merit notifications.","tag":"Real-Time Updates"},{"id":4,"image":"https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80","title":"Alumni & Sports Mentorship","description":"Connecting champion alumni with current athletes for career guidance, training support, and placements.","tag":"Community"}]',
+      zonal_features_header: 'Core Zonal Features',
+      zonal_features_desc: 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.',
+      show_company_slider: 1,
+      company_slider_title: 'Our Placement Partners & Recruiters',
+      company_slider_desc: 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -55,7 +72,9 @@ app.post('/api/settings', async (req, res) => {
     social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
     top_header_links, show_main_header, univ_tagline, accreditation_logos,
     contact_intro, contact_address, contact_timings, contact_timings_note,
-    contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query
+    contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query,
+    zonal_features, zonal_features_header, zonal_features_desc,
+    show_company_slider, company_slider_title, company_slider_desc
   } = req.body;
   try {
     await query.run(
@@ -65,9 +84,11 @@ app.post('/api/settings', async (req, res) => {
         social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
         top_header_links, show_main_header, univ_tagline, accreditation_logos,
         contact_intro, contact_address, contact_timings, contact_timings_note,
-        contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query
+        contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query,
+        zonal_features, zonal_features_header, zonal_features_desc,
+        show_company_slider, company_slider_title, company_slider_desc
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         univ_name, logo_url, theme_preset, primary_color, secondary_color,
         show_top_header ?? 1, top_header_phone ?? '+953 012 3654 896', top_header_email ?? 'support@apex.edu',
@@ -77,10 +98,25 @@ app.post('/api/settings', async (req, res) => {
         univ_tagline ?? 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
         accreditation_logos ?? '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]',
         contact_intro ?? '', contact_address ?? '', contact_timings ?? '', contact_timings_note ?? '',
-        contact_phone1 ?? '', contact_phone2 ?? '', contact_email1 ?? '', contact_email2 ?? '', contact_map_query ?? ''
+        contact_phone1 ?? '', contact_phone2 ?? '', contact_email1 ?? '', contact_email2 ?? '', contact_map_query ?? '',
+        zonal_features ?? '[]', zonal_features_header ?? 'Core Zonal Features', zonal_features_desc ?? 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.',
+        show_company_slider ?? 1,
+        company_slider_title ?? 'Our Placement Partners & Recruiters',
+        company_slider_desc ?? 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.'
       ]
     );
     const updated = await query.get('SELECT * FROM settings WHERE id = 1');
+    if (updated) {
+      if (!updated.zonal_features || updated.zonal_features === '[]') {
+        updated.zonal_features = '[{"id":1,"image":"https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&auto=format&fit=crop&q=80","title":"Inter-Collegiate Tournaments","description":"Organizing prestigious zonal, inter-zonal, and state-level sports competitions for student-athletes.","tag":"Competitions"},{"id":2,"image":"https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80","title":"Sports Calendar & Schedules","description":"Access accurate schedules, entry dates, brackets, and fixtures for the entire academic year.","tag":"Schedules"},{"id":3,"image":"https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80","title":"Dynamic Results Portal","description":"Real-time updates of tournament standings, team rosters, scoreboards, and merit notifications.","tag":"Real-Time Updates"},{"id":4,"image":"https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80","title":"Alumni & Sports Mentorship","description":"Connecting champion alumni with current athletes for career guidance, training support, and placements.","tag":"Community"}]';
+      }
+      if (!updated.zonal_features_header) {
+        updated.zonal_features_header = 'Core Zonal Features';
+      }
+      if (!updated.zonal_features_desc) {
+        updated.zonal_features_desc = 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.';
+      }
+    }
     res.json({ success: true, settings: updated });
   } catch (err) {
     res.status(500).json({ error: err.message });

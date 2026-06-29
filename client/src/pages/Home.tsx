@@ -6,6 +6,7 @@ import {
   ArrowRight, ArrowRight as ArrowRightIcon, Award, Newspaper, Star, Sparkles,
   ChevronLeft, ChevronRight, Briefcase, FileText
 } from 'lucide-react';
+import { FeatureGrid } from '../components/FeatureGrid';
 
 interface HomeProps {
   setCurrentTab: (tab: string) => void;
@@ -36,12 +37,18 @@ const SLIDER_STYLE = `
   0% { transform: translateY(0%); }
   100% { transform: translateY(-50%); }
 }
+@keyframes logoSliderScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
 .hero-tag-anim { animation: heroFadeDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.15s; }
 .hero-h1-anim  { animation: heroFadeUp   0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.3s; }
 .hero-p-anim   { animation: heroFadeLeft 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.5s; }
 .hero-cta-anim { animation: heroScaleIn  0.8s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 0.7s; }
 .vertical-marquee-anim { animation: verticalMarquee 22s linear infinite; }
 .vertical-marquee-anim:hover { animation-play-state: paused; }
+.logo-slider-track { animation: logoSliderScroll 30s linear infinite; }
+.logo-slider-track:hover { animation-play-state: paused; }
 `;
 
 const DEFAULT_SLIDES = [
@@ -104,6 +111,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
   const [activeHeroIdx, setActiveHeroIdx] = useState(0);
   const [heroSlides, setHeroSlides] = useState<any[]>(DEFAULT_SLIDES);
   const [slideKey, setSlideKey] = useState(0); // force re-mount for re-animation
+  const [companies, setCompanies] = useState<any[]>([]);
 
   // Inject slider CSS keyframes once
   useEffect(() => {
@@ -181,6 +189,18 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
         }
       })
       .catch(err => console.warn('Could not load spotlights from server:', err));
+  }, []);
+
+  // Fetch placement companies for logo slider
+  useEffect(() => {
+    fetch('http://localhost:5001/api/placement/companies')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCompanies(data.sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0)));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const staticNews = [
@@ -366,96 +386,26 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
                 </div>
               )}
             </div>
+            
+            {/* View All link button */}
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 shrink-0 text-center">
+              <button
+                onClick={() => setCurrentTab('about-news_notices')}
+                className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-xl text-[10px] font-bold uppercase tracking-wider text-slate-650 dark:text-slate-350 hover:text-white bg-slate-100/80 dark:bg-slate-800/80 hover:bg-primary transition-all shadow-sm cursor-pointer"
+              >
+                <span>View All News & Notices</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </section>
       </div>
       </div>
 
       {/* Bounded Homepage content wrapper */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-24">
-        <section className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Careers */}
-          <div 
-            onClick={() => setCurrentTab('jobs')}
-            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/50 transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-all duration-300" />
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-primary-light/50 dark:bg-primary/10 text-primary flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                <Briefcase className="w-5 h-5" />
-              </div>
-              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-primary transition-colors duration-250">
-                Browse Careers
-              </h3>
-              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
-                Explore job openings and internship opportunities posted by our global alumni network.
-              </p>
-            </div>
-            <span className="text-left font-bold text-xs uppercase tracking-wider text-primary flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
-              Explore Careers <ArrowRight className="w-4 h-4" />
-            </span>
-          </div>
-
-          {/* Card 2: Directory */}
-          <div 
-            onClick={() => setCurrentTab('directory')}
-            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-sky-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-sky-550/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl group-hover:bg-sky-500/20 transition-all duration-300" />
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-sky-100 dark:bg-sky-950/40 text-sky-600 dark:text-sky-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                <Users className="w-5 h-5" />
-              </div>
-              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-sky-500 transition-colors duration-250">
-                Alumni Directory
-              </h3>
-              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
-                Search classmate registries, verify graduation indices, and establish professional links.
-              </p>
-            </div>
-            <span className="text-left font-bold text-xs uppercase tracking-wider text-sky-600 dark:text-sky-400 flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
-              Search Classmates <ArrowRight className="w-4 h-4" />
-            </span>
-          </div>
-
-          {/* Card 3: Mentorship */}
-          <div 
-            onClick={() => { if (currentUser) setCurrentTab(`${currentUser.role}-dashboard`); else setCurrentTab('login-selection'); }}
-            className="group relative glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 hover:border-violet-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-violet-550/5 hover:-translate-y-1.5 flex flex-col justify-between min-h-[260px] cursor-pointer overflow-hidden text-left"
-          >
-            <div className="absolute top-0 right-0 w-24 h-24 bg-violet-500/10 rounded-full blur-2xl group-hover:bg-violet-500/20 transition-all duration-300" />
-            <div>
-              <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300 shadow-inner">
-                <Award className="w-5 h-5" />
-              </div>
-              <h3 className="font-extrabold text-lg text-slate-850 dark:text-slate-100 tracking-tight mb-2 group-hover:text-violet-500 transition-colors duration-250">
-                Expert Mentorship
-              </h3>
-              <p className="text-xs leading-relaxed text-slate-500 dark:text-slate-400 font-light max-w-[240px]">
-                Register as an alumni mentor or request 1-on-1 career guidance sessions with students.
-              </p>
-            </div>
-            <span className="text-left font-bold text-xs uppercase tracking-wider text-violet-600 dark:text-violet-400 flex items-center gap-1.5 mt-6 group-hover:gap-2.5 transition-all">
-              Match Mentors <ArrowRight className="w-4 h-4" />
-            </span>
-          </div>
-        </section>
-
-      {/* Statistics Ticker */}
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-10">
-        {stats.map((s, idx) => {
-          const Icon = s.icon;
-          return (
-            <div key={idx} className="glass-card p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 text-center flex flex-col items-center justify-center">
-              <div className="p-3 bg-primary-light dark:bg-primary/10 rounded-xl mb-4 text-primary">
-                <Icon className="w-6 h-6" />
-              </div>
-              <h3 className="text-3xl font-extrabold text-slate-800 dark:text-white leading-none">{s.val}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider mt-2">{s.label}</p>
-            </div>
-          );
-        })}
-      </section>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        {/* Zonal Core Feature Grid Component */}
+        <FeatureGrid />
 
       {/* Success Stories Slider */}
       <section className="glass-card p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 relative overflow-hidden">
@@ -507,71 +457,105 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
         </div>
       </section>
 
-      {/* Events & News Side-by-Side */}
-      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Upcoming Events */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
-              <Calendar className="w-6 h-6 text-primary" /> Upcoming Events
-            </h2>
-            <button 
-              onClick={() => setCurrentTab('events')} 
-              className="text-xs font-bold uppercase tracking-wider text-primary hover:text-primary-dark flex items-center gap-1 transition-colors"
-            >
-              View All <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
+      {/* ── Company / Placement Partner Logo Slider ── */}
+      {settings.show_company_slider !== 0 && (() => {
+        const sliderTitle = settings.company_slider_title || 'Our Placement Partners & Recruiters';
+        const sliderDesc = settings.company_slider_desc || 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.';
+        const defaultCompanies = [
+          { id: 1, name: 'Sports Authority of India', logo_url: '', website: '#' },
+          { id: 2, name: 'BCCI', logo_url: '', website: '#' },
+          { id: 3, name: 'Maharashtra Govt.', logo_url: '', website: '#' },
+          { id: 4, name: 'Nike India', logo_url: '', website: '#' },
+          { id: 5, name: 'Decathlon', logo_url: '', website: '#' },
+          { id: 6, name: 'Adidas India', logo_url: '', website: '#' },
+          { id: 7, name: 'SPPU', logo_url: '', website: '#' },
+          { id: 8, name: 'Army Sports Institute', logo_url: '', website: '#' },
+        ];
+        const displayCompanies = companies.length > 0 ? companies : defaultCompanies;
+        const doubledCompanies = [...displayCompanies, ...displayCompanies];
 
-          <div className="space-y-4">
-            {events.length > 0 ? (
-              events.map((evt) => (
-                <div key={evt.id} className="glass-card p-4 rounded-2xl flex gap-4 items-center border border-slate-200/50 dark:border-slate-800/40">
-                  <div className="w-16 h-16 rounded-xl bg-primary-light/50 dark:bg-primary/10 flex flex-col items-center justify-center flex-shrink-0 text-primary">
-                    <span className="text-xs font-extrabold uppercase leading-none">{evt.type}</span>
-                    <span className="text-xs font-extrabold mt-1">{evt.date.split('-')[2]}</span>
-                  </div>
-                  <div className="text-left flex-1 min-w-0">
-                    <h4 className="font-bold text-sm text-slate-800 dark:text-white truncate">{evt.title}</h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-semibold truncate">📍 {evt.location}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-slate-500">No upcoming events listed.</p>
-            )}
-          </div>
-        </div>
-        {/* News Feed */}
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
-            <Newspaper className="w-6 h-6 text-primary" /> Latest University News
-          </h2>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {newsList.slice(0, 4).map((n) => (
-              <div 
-                key={n.id} 
-                onClick={() => setSelectedNews(n)}
-                className="glass-card rounded-2xl overflow-hidden border border-slate-200/50 dark:border-slate-800/40 flex flex-col cursor-pointer hover:shadow-lg transition-shadow group text-left"
-              >
-                {n.image_url && <img src={n.image_url} alt={n.title} className="w-full h-32 object-cover" />}
-                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                      {new Date(n.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                    </span>
-                    <h4 className="font-bold text-xs text-slate-800 dark:text-white mt-1 leading-snug group-hover:text-primary transition-colors line-clamp-2">
-                      {n.title}
-                    </h4>
-                  </div>
-                  <p className="text-[11px] text-slate-500 line-clamp-2 mt-2 leading-relaxed font-light">{stripHtml(n.description)}</p>
+        return (
+          <section className="py-4 overflow-hidden">
+            {/* Section Header */}
+            <div className="text-center mb-10 px-4">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 dark:bg-primary/15 border border-primary/20 text-primary text-[10px] font-extrabold uppercase tracking-widest mb-4">
+                <Briefcase className="w-3 h-3" /> Recruiters & Partners
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white">
+                {sliderTitle}
+              </h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-3 max-w-2xl mx-auto font-light leading-relaxed">
+                {sliderDesc}
+              </p>
+            </div>
+
+            {/* Infinite Logo Scroll Track */}
+            <div className="relative">
+              {/* Left fade mask */}
+              <div
+                className="absolute left-0 top-0 bottom-0 w-28 z-10 pointer-events-none"
+                style={{ background: 'linear-gradient(to right, white, transparent)' }}
+              />
+              {/* Right fade mask */}
+              <div
+                className="absolute right-0 top-0 bottom-0 w-28 z-10 pointer-events-none"
+                style={{ background: 'linear-gradient(to left, white, transparent)' }}
+              />
+
+              <div className="overflow-hidden">
+                <div className="logo-slider-track flex items-center gap-5 w-max py-2">
+                  {doubledCompanies.map((company, idx) => (
+                    <a
+                      key={`${company.id}-${idx}`}
+                      href={company.website && company.website !== '#' ? company.website : undefined}
+                      target={company.website && company.website !== '#' ? '_blank' : undefined}
+                      rel="noopener noreferrer"
+                      className="flex-shrink-0 group flex flex-col items-center justify-center gap-3 w-44 h-28 px-5 py-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/70 bg-white/90 dark:bg-slate-900/70 hover:border-primary/50 hover:bg-primary/5 dark:hover:bg-primary/10 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
+                    >
+                      {company.logo_url ? (
+                        <img
+                          src={company.logo_url}
+                          alt={company.name}
+                          className="h-12 w-auto max-w-[120px] object-contain group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const el = e.target as HTMLImageElement;
+                            el.style.display = 'none';
+                            el.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <div className={`w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent flex items-center justify-center ${company.logo_url ? 'hidden' : ''}`}>
+                        <Building2 className="w-6 h-6 text-primary/70" />
+                      </div>
+                      <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 group-hover:text-primary transition-colors text-center leading-snug line-clamp-2 px-1">
+                        {company.name}
+                      </span>
+                    </a>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+
+            {/* Stats bar */}
+            <div className="mt-10 mx-auto max-w-3xl px-4">
+              <div className="grid grid-cols-3 gap-0 rounded-2xl overflow-hidden border border-primary/15 bg-gradient-to-r from-primary/8 via-primary/5 to-primary/8 dark:from-primary/12 dark:via-primary/6 dark:to-primary/12">
+                <div className="text-center py-5 px-4">
+                  <p className="text-3xl font-extrabold text-primary leading-none">{displayCompanies.length}+</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1.5">Partner Organizations</p>
+                </div>
+                <div className="text-center py-5 px-4 border-x border-primary/15">
+                  <p className="text-3xl font-extrabold text-primary leading-none">500+</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1.5">Students Placed</p>
+                </div>
+                <div className="text-center py-5 px-4">
+                  <p className="text-3xl font-extrabold text-primary leading-none">15+</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1.5">States Covered</p>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       {/* Donation CTA Banner */}
       <section className="bg-gradient-to-r from-primary to-secondary p-8 sm:p-12 rounded-3xl text-white shadow-2xl relative overflow-hidden border border-primary/20">

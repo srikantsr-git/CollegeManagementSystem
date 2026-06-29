@@ -388,7 +388,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
 
   const filteredPages = allPages.filter(p => {
     if (parentMenuFilter === 'none') {
-      const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(p.id);
+      const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'news_notices', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(p.id);
       return !isBasePage && p.parent_menu !== 'about' && p.parent_menu !== 'academic' && p.parent_menu !== 'student';
     }
     return p.parent_menu === parentMenuFilter;
@@ -550,7 +550,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
   };
 
   const handleDeletePage = (pageId: string) => {
-    const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(pageId);
+    const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'news_notices', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(pageId);
     if (isBasePage) { alert("This is a system default page and cannot be deleted."); return; }
     setConfirmDialog({
       isOpen: true,
@@ -1136,7 +1136,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
           <h3 className="font-bold text-sm text-slate-800 dark:text-white mb-4">Page Catalog &amp; Deletion Center</h3>
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
             {filteredPages.map((page) => {
-              const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(page.id);
+              const isBasePage = ['about_us', 'committee', 'hods', 'ncte', 'director', 'circulars', 'news_notices', 'facilities', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results', 'events', 'stories', 'careers', 'activities', 'research', 'projects'].includes(page.id);
               const typeColor = page.menu_type === 'parent' ? 'bg-violet-100 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400' :
                 page.menu_type === 'standalone' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400' :
                 page.menu_type === 'sub-parent' ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' :
@@ -1236,6 +1236,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(settings.secondary_color);
   const [brandingSaved, setBrandingSaved] = useState(false);
+  const [zonalFeatures, setZonalFeatures] = useState<any[]>([]);
+  const [zonalFeaturesHeader, setZonalFeaturesHeader] = useState('');
+  const [zonalFeaturesDesc, setZonalFeaturesDesc] = useState('');
+  const [showCompanySlider, setShowCompanySlider] = useState(1);
+  const [companySliderTitle, setCompanySliderTitle] = useState('Our Placement Partners & Recruiters');
+  const [companySliderDesc, setCompanySliderDesc] = useState('Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.');
+
+  const DEFAULT_ZONAL_FEATURES_FALLBACK = [
+    {
+      id: 1,
+      image: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=800&auto=format&fit=crop&q=80",
+      title: "Inter-Collegiate Tournaments",
+      description: "Organizing prestigious zonal, inter-zonal, and state-level sports competitions for student-athletes.",
+      tag: "Competitions"
+    },
+    {
+      id: 2,
+      image: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&auto=format&fit=crop&q=80",
+      title: "Sports Calendar & Schedules",
+      description: "Access accurate schedules, entry dates, brackets, and fixtures for the entire academic year.",
+      tag: "Schedules"
+    },
+    {
+      id: 3,
+      image: "https://images.unsplash.com/photo-1544698310-74ea9d1c8258?w=800&auto=format&fit=crop&q=80",
+      title: "Dynamic Results Portal",
+      description: "Real-time updates of tournament standings, team rosters, scoreboards, and merit notifications.",
+      tag: "Real-Time Updates"
+    },
+    {
+      id: 4,
+      image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&auto=format&fit=crop&q=80",
+      title: "Alumni & Sports Mentorship",
+      description: "Connecting champion alumni with current athletes for career guidance, training support, and placements.",
+      tag: "Community"
+    }
+  ];
 
   // Contact Us Settings Form State
   const [contactIntro, setContactIntro] = useState('');
@@ -1313,6 +1350,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       setContactEmail1(settings.contact_email1 || '');
       setContactEmail2(settings.contact_email2 || '');
       setContactMapQuery(settings.contact_map_query || '');
+
+      // Sync Zonal Features
+      try {
+        if (settings.zonal_features) {
+          const parsed = JSON.parse(settings.zonal_features);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setZonalFeatures(parsed);
+          } else {
+            setZonalFeatures(DEFAULT_ZONAL_FEATURES_FALLBACK);
+          }
+        } else {
+          setZonalFeatures(DEFAULT_ZONAL_FEATURES_FALLBACK);
+        }
+      } catch (err) {
+        setZonalFeatures(DEFAULT_ZONAL_FEATURES_FALLBACK);
+      }
+
+      setZonalFeaturesHeader(settings.zonal_features_header || 'Core Zonal Features');
+      setZonalFeaturesDesc(settings.zonal_features_desc || 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.');
+
+      // Sync Company Slider Settings
+      setShowCompanySlider(settings.show_company_slider ?? 1);
+      setCompanySliderTitle(settings.company_slider_title || 'Our Placement Partners & Recruiters');
+      setCompanySliderDesc(settings.company_slider_desc || 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.');
     }
   }, [settings]);
 
@@ -1859,7 +1920,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       contact_phone2: contactPhone2,
       contact_email1: contactEmail1,
       contact_email2: contactEmail2,
-      contact_map_query: contactMapQuery
+      contact_map_query: contactMapQuery,
+      zonal_features: JSON.stringify(zonalFeatures),
+      zonal_features_header: zonalFeaturesHeader,
+      zonal_features_desc: zonalFeaturesDesc,
+      show_company_slider: showCompanySlider,
+      company_slider_title: companySliderTitle,
+      company_slider_desc: companySliderDesc
     });
     if (success) {
       setBrandingSaved(true);
@@ -2263,7 +2330,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   };
 
   const handleDeletePage = (pageId: string) => {
-    const isBasePage = ['about_us', 'committee', 'director', 'circulars', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results'].includes(pageId);
+    const isBasePage = ['about_us', 'committee', 'director', 'circulars', 'news_notices', 'souvenirs', 'calendar', 'draws', 'results', 'courses', 'admission', 'syllabus', 'academic_results'].includes(pageId);
     if (isBasePage) {
       alert("This is a system default page and cannot be deleted.");
       return;
@@ -5714,6 +5781,202 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                     <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Enter the place name or coordinates to automatically center the interactive Google Map.</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-6 pt-6" />
+
+              {/* Core Zonal Features Configurator */}
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-primary animate-pulse" /> Core Zonal Features Grid Content
+                  </h3>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Section Title / Header</label>
+                    <input
+                      type="text"
+                      required
+                      value={zonalFeaturesHeader}
+                      onChange={e => setZonalFeaturesHeader(e.target.value)}
+                      placeholder="e.g. Core Zonal Features"
+                      className="glass-input font-bold"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Section Description</label>
+                    <textarea
+                      rows={2}
+                      required
+                      value={zonalFeaturesDesc}
+                      onChange={e => setZonalFeaturesDesc(e.target.value)}
+                      placeholder="Short description displayed below the section header..."
+                      className="glass-input resize-none font-medium text-[11px]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {zonalFeatures.map((feat, idx) => (
+                    <div key={feat.id || idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 space-y-3.5 text-left">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-extrabold bg-primary/10 text-primary px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                          Feature #{idx + 1}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Title</label>
+                          <input
+                            type="text"
+                            required
+                            value={feat.title}
+                            onChange={e => {
+                              const updated = [...zonalFeatures];
+                              updated[idx].title = e.target.value;
+                              setZonalFeatures(updated);
+                            }}
+                            className="glass-input font-bold animate-all"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Badge Tag</label>
+                          <input
+                            type="text"
+                            required
+                            value={feat.tag}
+                            onChange={e => {
+                              const updated = [...zonalFeatures];
+                              updated[idx].tag = e.target.value;
+                              setZonalFeatures(updated);
+                            }}
+                            className="glass-input font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Short Description</label>
+                        <textarea
+                          rows={2}
+                          required
+                          value={feat.description}
+                          onChange={e => {
+                            const updated = [...zonalFeatures];
+                            updated[idx].description = e.target.value;
+                            setZonalFeatures(updated);
+                          }}
+                          className="glass-input resize-none text-[11px] font-light leading-relaxed"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">Cover Image URL</label>
+                        <div className="flex gap-2 items-center">
+                          <div className="w-10 h-10 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 flex items-center justify-center shrink-0 overflow-hidden shadow-inner">
+                            {feat.image ? (
+                              <img src={feat.image} alt={feat.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-[8px] text-slate-400 font-bold uppercase">No Image</span>
+                            )}
+                          </div>
+                          <div className="flex-1 flex flex-col gap-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  const reader = new FileReader();
+                                  reader.onload = () => {
+                                    const updated = [...zonalFeatures];
+                                    updated[idx].image = reader.result as string;
+                                    setZonalFeatures(updated);
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="text-[9px] file:mr-2 file:py-0.5 file:px-2 file:rounded-lg file:border-0 file:text-[9px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer w-full"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Or paste image URL"
+                              value={feat.image}
+                              onChange={e => {
+                                const updated = [...zonalFeatures];
+                                updated[idx].image = e.target.value;
+                                setZonalFeatures(updated);
+                              }}
+                              className="glass-input text-[9px] h-6 py-0 px-2 mt-1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}\r\n                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-6 pt-6" />
+
+              {/* ── Company Logo Slider Configurator ── */}
+              <div className="space-y-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                      <Briefcase className="w-5 h-5 text-primary" /> Home Page — Placement Partner Logos Slider
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-1">Configure the auto-scrolling company logo marquee displayed on the homepage above the footer. Add companies via Placement Manager.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowCompanySlider(showCompanySlider === 1 ? 0 : 1)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer shrink-0 ${showCompanySlider === 1 ? 'bg-primary' : 'bg-slate-300 dark:bg-slate-600'}`}
+                    title={showCompanySlider === 1 ? 'Click to hide slider' : 'Click to show slider'}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${showCompanySlider === 1 ? 'translate-x-6' : 'translate-x-1'}`} />
+                  </button>
+                </div>
+
+                {showCompanySlider === 1 && (
+                  <div className="space-y-4 p-5 border border-primary/15 bg-primary/5 dark:bg-primary/5 rounded-2xl">
+                    <div className="flex flex-col gap-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Section Heading Title</label>
+                      <input
+                        type="text"
+                        value={companySliderTitle}
+                        onChange={e => setCompanySliderTitle(e.target.value)}
+                        placeholder="e.g. Our Placement Partners & Recruiters"
+                        className="glass-input font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Section Description</label>
+                      <textarea
+                        rows={2}
+                        value={companySliderDesc}
+                        onChange={e => setCompanySliderDesc(e.target.value)}
+                        placeholder="Short description about placements..."
+                        className="glass-input resize-none font-medium text-[11px]"
+                      />
+                    </div>
+                    <div className="p-3.5 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 flex items-start gap-2.5">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-amber-700 dark:text-amber-400 leading-relaxed font-medium">
+                        To manage actual company logos displayed in the slider, go to <strong>Placement Manager</strong> in the sidebar and use the Companies tab.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {showCompanySlider === 0 && (
+                  <p className="text-[11px] text-slate-400 italic pl-1">Slider is currently hidden. Toggle ON above to enable and configure.</p>
+                )}
               </div>
 
             </form>
