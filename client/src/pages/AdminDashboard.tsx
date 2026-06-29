@@ -8,7 +8,7 @@ import {
   Check, X, Sparkles, RefreshCw, Landmark, Calendar, Image,
   Newspaper, FileText, SlidersHorizontal, Trash2, Edit3, Edit2, Plus, Save, Eye, EyeOff, Trophy,
   Users, User, AlertTriangle, CheckCircle2, Info, ShieldCheck, BookOpen, FileDown,
-  Briefcase, PlusCircle, LayoutDashboard, Building2, Award, Loader2
+  Briefcase, PlusCircle, LayoutDashboard, Building2, Award, Loader2, MessageSquare
 } from 'lucide-react';
 
 import { MenuNavigationManager } from '../components/MenuNavigationManager';
@@ -404,6 +404,18 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
       setSelectedPageId('');
     }
   }, [allPages]);
+
+  // Auto-select page if requested from edit button on public pages
+  useEffect(() => {
+    const editPageId = sessionStorage.getItem('admin_edit_page_id');
+    if (editPageId) {
+      const match = filteredPages.find(p => p.id === editPageId);
+      if (match) {
+        setSelectedPageId(match.id);
+        sessionStorage.removeItem('admin_edit_page_id');
+      }
+    }
+  }, [allPages, filteredPages]);
 
   // Load FULL page data from API when selection changes
   useEffect(() => {
@@ -1195,7 +1207,13 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, setCurrentTab }) => {
 
-  const [activeSubTab, setActiveSubTab] = useState('dashboard');
+  const [activeSubTab, setActiveSubTab] = useState(() => {
+    return sessionStorage.getItem('admin_active_sub_tab') || 'dashboard';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('admin_active_sub_tab', activeSubTab);
+  }, [activeSubTab]);
   const { settings, updateSettings } = useTheme();
 
   // Database lists
@@ -1218,6 +1236,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const [primaryColor, setPrimaryColor] = useState(settings.primary_color);
   const [secondaryColor, setSecondaryColor] = useState(settings.secondary_color);
   const [brandingSaved, setBrandingSaved] = useState(false);
+
+  // Contact Us Settings Form State
+  const [contactIntro, setContactIntro] = useState('');
+  const [contactAddress, setContactAddress] = useState('');
+  const [contactTimings, setContactTimings] = useState('');
+  const [contactTimingsNote, setContactTimingsNote] = useState('');
+  const [contactPhone1, setContactPhone1] = useState('');
+  const [contactPhone2, setContactPhone2] = useState('');
+  const [contactEmail1, setContactEmail1] = useState('');
+  const [contactEmail2, setContactEmail2] = useState('');
+  const [contactMapQuery, setContactMapQuery] = useState('');
 
   // Top Header Configurations Form State
   const [showTopHeader, setShowTopHeader] = useState(1);
@@ -1270,19 +1299,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       setUnivTagline(settings.univ_tagline ?? 'Autonomous Institution | Approved by AICTE | Permanently Affiliated');
       try {
         const parsed = JSON.parse(settings.accreditation_logos || '[]');
-        if (parsed && parsed.length > 0) {
-          setAccreditationLogos(parsed);
-        } else {
-          setAccreditationLogos([
-            { id: 'naac', title: 'NAAC A++', subtitle: 'Accredited Grade', image_url: '/naac.png' },
-            { id: 'nba', title: 'NBA', subtitle: 'Accredited Tier-1', image_url: '/nba.png' },
-            { id: 'nirf', title: 'NIRF', subtitle: 'Top Engineering', image_url: '/nirf.png' },
-            { id: 'ugc', title: 'UGC', subtitle: 'Autonomous', image_url: '/ugc.png' }
-          ]);
-        }
+        setAccreditationLogos(JSON.parse(settings.accreditation_logos || '[]'));
       } catch {
         setAccreditationLogos([]);
       }
+
+      setContactIntro(settings.contact_intro || '');
+      setContactAddress(settings.contact_address || '');
+      setContactTimings(settings.contact_timings || '');
+      setContactTimingsNote(settings.contact_timings_note || '');
+      setContactPhone1(settings.contact_phone1 || '');
+      setContactPhone2(settings.contact_phone2 || '');
+      setContactEmail1(settings.contact_email1 || '');
+      setContactEmail2(settings.contact_email2 || '');
+      setContactMapQuery(settings.contact_map_query || '');
     }
   }, [settings]);
 
@@ -1820,7 +1850,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       top_header_links: JSON.stringify(topHeaderLinks),
       show_main_header: showMainHeader,
       univ_tagline: univTagline,
-      accreditation_logos: JSON.stringify(accreditationLogos)
+      accreditation_logos: JSON.stringify(accreditationLogos),
+      contact_intro: contactIntro,
+      contact_address: contactAddress,
+      contact_timings: contactTimings,
+      contact_timings_note: contactTimingsNote,
+      contact_phone1: contactPhone1,
+      contact_phone2: contactPhone2,
+      contact_email1: contactEmail1,
+      contact_email2: contactEmail2,
+      contact_map_query: contactMapQuery
     });
     if (success) {
       setBrandingSaved(true);
@@ -5022,10 +5061,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
 
         {/* BRANDING SETTINGS TAB */}
         {activeSubTab === 'branding' && (
-          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
-            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-6">
-              <Settings className="w-6 h-6 text-primary" /> Branding Settings
-            </h2>
+          <div className="space-y-6">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                <Settings className="w-6 h-6 text-primary" /> Home/Branding Settings
+              </h2>
+              <button 
+                onClick={() => {
+                  const formEl = document.getElementById('branding-settings-form') as HTMLFormElement;
+                  if (formEl) {
+                    formEl.requestSubmit();
+                  }
+                }}
+                className="btn-primary text-xs font-bold py-2.5 px-6 shadow-md cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+              >
+                <Save className="w-4 h-4 text-slate-900" /> Save Branding Changes
+              </button>
+            </div>
             <p className="text-sm text-slate-500 mb-6">
               Change the university logo, name, and color theme preset dynamically across the entire app interface.
             </p>
@@ -5036,7 +5089,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
               </div>
             )}
 
-            <form onSubmit={handleBrandingSave} className="space-y-6 text-xs">
+            <form id="branding-settings-form" onSubmit={handleBrandingSave} className="space-y-6 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div className="flex flex-col gap-1.5">
@@ -5541,11 +5594,504 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
                 )}
               </div>
 
-              <button type="submit" className="btn-primary text-xs font-bold py-3.5 px-8 shadow-md cursor-pointer">
-                Save & Update branding settings
-              </button>
+              {/* Divider */}
+              <div className="border-t border-dashed border-slate-200 dark:border-slate-800 my-6 pt-6" />
+
+              {/* Customizable Contact Us Section */}
+              <div className="space-y-6 animate-in fade-in duration-200">
+                <div>
+                  <h3 className="font-extrabold text-sm text-slate-800 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-primary" /> Contact Us Page Configurator
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-1">Configure the official address, timings, phones, emails, and map coordinates displayed on the public Contact Us page.</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Contact Intro Paragraph</label>
+                    <textarea
+                      rows={3}
+                      value={contactIntro}
+                      onChange={e => setContactIntro(e.target.value)}
+                      placeholder="e.g. We Department of Sports & Physical Education always ready to provide the information..."
+                      className="glass-input font-medium resize-none text-[11px]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5 text-left">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Postal Address</label>
+                      <textarea
+                        rows={5}
+                        value={contactAddress}
+                        onChange={e => setContactAddress(e.target.value)}
+                        placeholder="e.g. Department of Sports & Physical Education, Savitribai Phule Pune University..."
+                        className="glass-input font-medium font-mono text-[11px] leading-normal"
+                      />
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Office Timings</label>
+                        <input
+                          type="text"
+                          value={contactTimings}
+                          onChange={e => setContactTimings(e.target.value)}
+                          placeholder="e.g. 10:30 am to 06:00 pm"
+                          className="glass-input font-bold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Timings Holiday Notice / Important Note</label>
+                        <input
+                          type="text"
+                          value={contactTimingsNote}
+                          onChange={e => setContactTimingsNote(e.target.value)}
+                          placeholder="e.g. The University office has holidays on the 1st and the 3rd Saturday..."
+                          className="glass-input font-medium"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Telephone Number 1</label>
+                        <input
+                          type="text"
+                          value={contactPhone1}
+                          onChange={e => setContactPhone1(e.target.value)}
+                          placeholder="e.g. +91 - 20 - 25622428"
+                          className="glass-input font-semibold"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Telephone Number 2 (Optional)</label>
+                        <input
+                          type="text"
+                          value={contactPhone2}
+                          onChange={e => setContactPhone2(e.target.value)}
+                          placeholder="e.g. +91 - 20 - 25622429"
+                          className="glass-input font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Primary Email Address</label>
+                        <input
+                          type="text"
+                          value={contactEmail1}
+                          onChange={e => setContactEmail1(e.target.value)}
+                          placeholder="e.g. dpe@unipune.ac.in"
+                          className="glass-input"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5 text-left">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Secondary/Admin Email Address</label>
+                        <input
+                          type="text"
+                          value={contactEmail2}
+                          onChange={e => setContactEmail2(e.target.value)}
+                          placeholder="e.g. dpeadmin@unipune.ac.in"
+                          className="glass-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1.5 text-left">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Google Maps Search Query / Coordinates</label>
+                    <input
+                      type="text"
+                      value={contactMapQuery}
+                      onChange={e => setContactMapQuery(e.target.value)}
+                      placeholder="e.g. Savitribai Phule Pune University, Pune"
+                      className="glass-input font-medium"
+                    />
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Enter the place name or coordinates to automatically center the interactive Google Map.</span>
+                  </div>
+                </div>
+              </div>
+
             </form>
           </div>
+
+          {/* ── HERO SLIDER SETTINGS ── */}
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2 mb-2">
+              <SlidersHorizontal className="w-6 h-6 text-primary" />
+              {slideEditId ? 'Edit Slide' : 'Add New Slide'}
+            </h2>
+            <p className="text-xs text-slate-500 mb-6">
+              {slideEditId ? `Editing slide #${slideEditId}` : 'Create a new hero slider slide. Image, heading, subtext, button & link.'}
+            </p>
+
+            {slSaved && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3 text-xs mb-4 flex items-center gap-2">
+                <Check className="w-4 h-4" /> Slide saved successfully!
+              </div>
+            )}
+
+            <form onSubmit={handleSliderSave} className="space-y-5 text-xs">
+              {/* Image Upload */}
+              <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex-1 space-y-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Slide Background Image</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleSliderImageUpload}
+                      className="block text-[11px] text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-primary-light file:text-primary hover:file:bg-primary/20 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Or paste an image URL below:</p>
+                    <input
+                      type="url"
+                      value={slForm.image_url.startsWith('data:') ? '' : slForm.image_url}
+                      onChange={e => { setSlForm(f => ({ ...f, image_url: e.target.value })); setSlImagePreview(e.target.value); }}
+                      placeholder="https://example.com/image.jpg"
+                      className="glass-input"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Dark Overlay Opacity: <span className="text-primary">{Math.round(slForm.overlay_opacity * 100)}%</span>
+                    </label>
+                    <input
+                      type="range" min="0" max="1" step="0.05"
+                      value={slForm.overlay_opacity}
+                      onChange={e => setSlForm(f => ({ ...f, overlay_opacity: parseFloat(e.target.value) }))}
+                      className="accent-primary w-full"
+                    />
+                    <p className="text-[10px] text-slate-400">Higher = darker background (better text readability)</p>
+                  </div>
+                </div>
+
+                {/* Image Preview */}
+                <div className="w-full lg:w-64 h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0 relative">
+                  {slImagePreview ? (
+                    <>
+                      <img src={slImagePreview} alt="Preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black" style={{ opacity: slForm.overlay_opacity }} />
+                      <div className="absolute bottom-2 left-2 right-2 z-10">
+                        <p className="text-white text-[10px] font-black uppercase truncate drop-shadow">{slForm.title || 'Slide Title'}</p>
+                        <p className="text-white/70 text-[9px] truncate">{slForm.subtitle || 'Subtitle'}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center text-slate-400 space-y-1">
+                      <Image className="w-8 h-8 mx-auto opacity-30" />
+                      <p className="text-[10px]">Preview</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Text Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Main Title *</label>
+                  <input required type="text" value={slForm.title}
+                    onChange={e => setSlForm(f => ({ ...f, title: e.target.value }))}
+                    placeholder="e.g. Excellence in Sports" className="glass-input" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Subtitle / Tag</label>
+                  <input type="text" value={slForm.subtitle}
+                    onChange={e => setSlForm(f => ({ ...f, subtitle: e.target.value }))}
+                    placeholder="e.g. Pune City Zone Sports Committee" className="glass-input" />
+                </div>
+                <div className="sm:col-span-2 flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Description</label>
+                  <textarea rows={2} value={slForm.description}
+                    onChange={e => setSlForm(f => ({ ...f, description: e.target.value }))}
+                    placeholder="Short description shown under the title..."
+                    className="glass-input resize-none" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Button Text</label>
+                  <input type="text" value={slForm.btn_text}
+                    onChange={e => setSlForm(f => ({ ...f, btn_text: e.target.value }))}
+                    placeholder="e.g. Learn More" className="glass-input" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Button Link (Tab ID)</label>
+                  <input type="text" value={slForm.btn_link}
+                    onChange={e => setSlForm(f => ({ ...f, btn_link: e.target.value }))}
+                    placeholder="e.g. events or about-calendar" className="glass-input" />
+                  <p className="text-[10px] text-slate-400">Use tab IDs: home, events, directory, about-calendar, etc.</p>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order</label>
+                  <input type="number" min="0" value={slForm.sort_order}
+                    onChange={e => setSlForm(f => ({ ...f, sort_order: parseInt(e.target.value) || 0 }))}
+                    className="glass-input" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</label>
+                  <select value={slForm.active} onChange={e => setSlForm(f => ({ ...f, active: parseInt(e.target.value) }))}
+                    className="glass-input">
+                    <option value={1}>Active (Visible)</option>
+                    <option value={0}>Hidden</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="btn-primary text-xs font-bold py-3 px-6 shadow-md cursor-pointer gap-2">
+                  <Save className="w-4 h-4 text-slate-900" />
+                  {slideEditId ? 'Update Slide' : 'Add Slide'}
+                </button>
+                {slideEditId && (
+                  <button type="button" onClick={resetSliderForm}
+                    className="btn-secondary text-xs font-bold py-3 px-5 cursor-pointer">
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Existing Slides List */}
+          <div className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/40">
+            <h3 className="font-bold text-base text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" /> Active Slides ({allSlides.length})
+            </h3>
+
+            {allSlides.length === 0 ? (
+              <p className="text-xs text-slate-400 py-8 text-center">No slides found. Add one above.</p>
+            ) : (
+              <div className="space-y-3">
+                {allSlides.map((slide) => (
+                  <div key={slide.id}
+                    className={`flex items-center gap-4 p-4 rounded-2xl border transition-all ${
+                      slide.active ? 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-200/50 dark:border-slate-800/40' : 'bg-slate-100/30 dark:bg-slate-950/20 border-dashed border-slate-200 dark:border-slate-800 opacity-60'
+                    }`}
+                  >
+                    {/* Thumbnail */}
+                    <div className="w-20 h-14 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0 relative">
+                      {slide.image_url ? (
+                        <img src={slide.image_url} alt={slide.title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Image className="w-5 h-5 text-slate-400" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black" style={{ opacity: slide.overlay_opacity ?? 0.5 }} />
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-bold text-xs text-slate-800 dark:text-white truncate">{slide.title}</p>
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wide ${
+                          slide.active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-slate-200 text-slate-500'
+                        }`}>{slide.active ? 'Active' : 'Hidden'}</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">#{slide.sort_order}</span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 truncate mt-0.5">{slide.subtitle}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{slide.btn_text} → {slide.btn_link || '—'}</p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button onClick={() => handleSliderEdit(slide)}
+                        className="p-2 rounded-xl bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all cursor-pointer"
+                        title="Edit">
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleSliderDelete(slide.id)}
+                        className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/20 text-rose-500 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                        title="Delete">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── ALUMNI SPOTLIGHT MANAGER PANEL ── */}
+          <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-6 h-6 text-primary" /> Alumni Spotlight & Success Stories
+              </h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Share inspiring success stories of our alumni. These stories appear in the slider on the Home page.
+              </p>
+            </div>
+
+            {spotSaved && (
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl p-3 text-xs flex items-center gap-2">
+                <Check className="w-4 h-4" /> Spotlight story saved successfully!
+              </div>
+            )}
+
+            <form onSubmit={handleSpotlightSave} className="space-y-4 border border-slate-200/60 dark:border-slate-800/40 rounded-2xl p-5 bg-slate-50/40 dark:bg-slate-950/20">
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest">
+                  {spotEditId ? "✏️ Edit Spotlight" : "➕ Add New Spotlight"}
+                </h3>
+                {spotEditId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSpotEditId(null);
+                      setSpotForm({ name: '', role: '', grad: '', photo: '', text: '' });
+                    }}
+                    className="text-[10px] font-bold text-rose-500 hover:text-rose-700 transition-colors"
+                  >
+                    Cancel Edit
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Alumnus Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={spotForm.name}
+                      onChange={(e) => setSpotForm((prev) => ({ ...prev, name: e.target.value }))}
+                      placeholder="e.g. John Doe"
+                      className="glass-input font-semibold"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Role / Current Designation *</label>
+                    <input
+                      type="text"
+                      required
+                      value={spotForm.role}
+                      onChange={(e) => setSpotForm((prev) => ({ ...prev, role: e.target.value }))}
+                      placeholder="e.g. Staff Software Engineer at Google"
+                      className="glass-input"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Graduation Details *</label>
+                    <input
+                      type="text"
+                      required
+                      value={spotForm.grad}
+                      onChange={(e) => setSpotForm((prev) => ({ ...prev, grad: e.target.value }))}
+                      placeholder="e.g. Class of 2012 (Computer Science)"
+                      className="glass-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Photo URL</label>
+                    <input
+                      type="text"
+                      value={spotForm.photo}
+                      onChange={(e) => setSpotForm((prev) => ({ ...prev, photo: e.target.value }))}
+                      placeholder="https://... or upload photo below"
+                      className="glass-input"
+                    />
+                  </div>
+
+                  <div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 rounded-2xl flex flex-col gap-3 items-center">
+                    <span className="text-[10px] text-slate-400 font-bold uppercase">Upload Photo</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = () => setSpotForm((prev) => ({ ...prev, photo: reader.result as string }));
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="glass-input text-[10px] file:mr-3 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer"
+                    />
+                    <div className="w-24 h-24 rounded-2xl border border-slate-200 dark:border-slate-800 flex items-center justify-center overflow-hidden bg-slate-50 dark:bg-slate-900">
+                      {spotForm.photo ? (
+                        <img src={spotForm.photo} alt="Preview" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                      ) : (
+                        <User className="w-8 h-8 text-slate-300 dark:text-slate-600" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5 text-xs">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Quote / Success Story Description *</label>
+                <RichTextEditor
+                  value={spotForm.text}
+                  onChange={(html) => setSpotForm((prev) => ({ ...prev, text: html }))}
+                  placeholder="e.g. My years at Apex University formed the bedrock of my career..."
+                />
+              </div>
+
+              <button type="submit" className="btn-primary text-xs font-bold py-3 px-8 shadow-md">
+                <Save className="w-4 h-4 mr-2 inline-block" />
+                {spotEditId ? "Save Changes" : "Publish Spotlight"}
+              </button>
+            </form>
+
+            <div>
+              <h3 className="text-xs font-extrabold text-slate-600 dark:text-slate-350 uppercase tracking-widest mb-3">
+                Current Spotlights ({allSpotlights.length})
+              </h3>
+              {allSpotlights.length === 0 ? (
+                <p className="text-slate-400 text-center py-8 text-sm">No spotlights published yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {allSpotlights.map((s) => (
+                    <div key={s.id} className="group relative flex gap-4 p-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-950/20 dark:hover:bg-slate-950/40 border border-slate-100 dark:border-slate-900 rounded-3xl transition-all">
+                      <div className="w-16 h-16 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-105 dark:bg-slate-900 flex items-center justify-center shrink-0">
+                        {s.photo ? (
+                          <img src={s.photo} alt={s.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <User className="w-6 h-6 text-slate-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-extrabold text-sm text-slate-850 dark:text-white truncate">{s.name}</p>
+                        <p className="text-[10px] font-bold text-primary tracking-wide uppercase mt-0.5 truncate">{s.role}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">{s.grad}</p>
+                        <p className="text-[11px] text-slate-500 mt-2 line-clamp-3 italic leading-relaxed font-medium">
+                          {s.text}
+                        </p>
+                      </div>
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleSpotlightEdit(s)}
+                          className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+                          title="Edit"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleSpotlightDelete(s.id)}
+                          className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/20 text-rose-650 hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         )}
 
         {/* ANALYTICS TAB */}

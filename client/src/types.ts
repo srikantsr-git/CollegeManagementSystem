@@ -18,6 +18,15 @@ export interface Settings {
   show_main_header: number;
   univ_tagline: string;
   accreditation_logos: string; // JSON string representation
+  contact_intro?: string;
+  contact_address?: string;
+  contact_timings?: string;
+  contact_timings_note?: string;
+  contact_phone1?: string;
+  contact_phone2?: string;
+  contact_email1?: string;
+  contact_email2?: string;
+  contact_map_query?: string;
 }
 
 export interface User {

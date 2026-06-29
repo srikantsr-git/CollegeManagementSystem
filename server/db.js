@@ -40,10 +40,10 @@ function initializeDatabase() {
             { id: 'about', title: 'About Us', parent_menu: 'none', menu_type: 'parent', sort_order: 1 },
             { id: 'academic', title: 'Academic', parent_menu: 'none', menu_type: 'parent', sort_order: 2 },
             { id: 'student', title: 'Student Corner', parent_menu: 'none', menu_type: 'parent', sort_order: 3 },
-            { id: 'directory', title: 'Alumni', parent_menu: 'none', menu_type: 'standalone', sort_order: 4 },
+            { id: 'directory', title: 'Alumni Directory', parent_menu: 'none', menu_type: 'standalone', sort_order: 4 },
             { id: 'gallery', title: 'Gallery', parent_menu: 'none', menu_type: 'standalone', sort_order: 5 },
             { id: 'placements', title: 'Placements', parent_menu: 'none', menu_type: 'standalone', sort_order: 6 },
-            { id: 'donations', title: 'Donations', parent_menu: 'none', menu_type: 'standalone', sort_order: 7 },
+            { id: 'donations', title: 'Donations & Giving', parent_menu: 'none', menu_type: 'standalone', sort_order: 7 },
             { id: 'contact', title: 'Contact', parent_menu: 'none', menu_type: 'standalone', sort_order: 8 },
             { id: 'about_us', title: 'About Us', parent_menu: 'about', menu_type: 'child', sort_order: 1 },
             { id: 'committee', title: 'Committee', parent_menu: 'about', menu_type: 'child', sort_order: 2 },
@@ -56,9 +56,9 @@ function initializeDatabase() {
             { id: 'admission', title: 'Admissions Notice', parent_menu: 'academic', menu_type: 'child', sort_order: 2 },
             { id: 'syllabus', title: 'Curriculum Syllabus', parent_menu: 'academic', menu_type: 'child', sort_order: 3 },
             { id: 'academic_results', title: 'Academic Results', parent_menu: 'academic', menu_type: 'child', sort_order: 4 },
-            { id: 'events', title: 'Events', parent_menu: 'student', menu_type: 'child', sort_order: 1 },
+            { id: 'events', title: 'Events Registry', parent_menu: 'student', menu_type: 'child', sort_order: 1 },
             { id: 'stories', title: 'Stories', parent_menu: 'student', menu_type: 'child', sort_order: 2 },
-            { id: 'careers', title: 'Careers', parent_menu: 'student', menu_type: 'child', sort_order: 3 },
+            { id: 'careers', title: 'Internships & Careers', parent_menu: 'student', menu_type: 'child', sort_order: 3 },
             { id: 'activities', title: 'Activities', parent_menu: 'student', menu_type: 'child', sort_order: 4 },
             { id: 'research', title: 'Research', parent_menu: 'student', menu_type: 'child', sort_order: 5 },
             { id: 'projects', title: 'Projects', parent_menu: 'student', menu_type: 'child', sort_order: 6 },
@@ -74,8 +74,8 @@ function initializeDatabase() {
               [m.id, m.title, m.parent_menu, m.menu_type, m.sort_order],
               () => {
                 db.run(
-                  "UPDATE custom_pages SET parent_menu = ?, menu_type = ?, sort_order = ? WHERE id = ?",
-                  [m.parent_menu, m.menu_type, m.sort_order, m.id]
+                  "UPDATE custom_pages SET parent_menu = ?, menu_type = ?, sort_order = ?, title = ? WHERE id = ?",
+                  [m.parent_menu, m.menu_type, m.sort_order, m.title, m.id]
                 );
               }
             );
@@ -95,6 +95,15 @@ function initializeDatabase() {
         db.run("ALTER TABLE settings ADD COLUMN show_main_header INTEGER DEFAULT 1;", () => {});
         db.run("ALTER TABLE settings ADD COLUMN univ_tagline TEXT DEFAULT 'Autonomous Institution | Approved by AICTE | Permanently Affiliated';", () => {});
         db.run("ALTER TABLE settings ADD COLUMN accreditation_logos TEXT DEFAULT '[]';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_intro TEXT DEFAULT 'We, the Department of Sports & Physical Education, are always ready to provide information and answers to queries of students. We aim to resolve basic and common questions about courses and other related information.';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_address TEXT DEFAULT 'Department of Sports & Physical Education,\nIravati Karve Social Science Complex, Behind SET Guest House,\nSavitribai Phule Pune University,\n(formerly University of Pune),\nPune - 411007, Maharashtra, INDIA.';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_timings TEXT DEFAULT '10:30 am to 06:00 pm';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_timings_note TEXT DEFAULT 'The University office has holidays on the 1st and the 3rd Saturday of every month.';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_phone1 TEXT DEFAULT '+91 - 20 - 25622428';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_phone2 TEXT DEFAULT '+91 - 20 - 25622429';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_email1 TEXT DEFAULT 'dpe@unipune.ac.in';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_email2 TEXT DEFAULT 'dpeadmin@unipune.ac.in';", () => {});
+        db.run("ALTER TABLE settings ADD COLUMN contact_map_query TEXT DEFAULT 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune';", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_url TEXT;", () => {});
         db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_name TEXT;", () => {});
         db.run("ALTER TABLE directors ADD COLUMN profile_pdf_url TEXT;", () => {});

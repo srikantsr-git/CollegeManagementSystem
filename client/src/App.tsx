@@ -15,13 +15,101 @@ import PlacementPage from './pages/PlacementPage';
 import { Event, Job } from './types';
 import {
   Calendar, Briefcase, Heart, MessageSquare, Send, Award, Clock, ArrowRight, ShieldCheck,
-  Info, CheckCircle2, AlertTriangle, X, Ticket, Download, Printer
+  Info, CheckCircle2, AlertTriangle, X, Ticket, Download, Printer, MapPin, Phone, Mail, Edit3
 } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const { settings } = useTheme();
   const [currentTab, setCurrentTab] = useState('home');
   const [currentUser, setCurrentUser] = useState<any>(null);
+
+  const handleEditPageClick = () => {
+    let targetTab = 'dashboard';
+    let editPageId = '';
+
+    if (currentTab === 'home') {
+      targetTab = 'branding';
+    } else if (currentTab === 'directory') {
+      targetTab = 'dashboard';
+    } else if (currentTab === 'stories') {
+      targetTab = 'spotlight-manager';
+    } else if (currentTab === 'events') {
+      targetTab = 'events-manager';
+    } else if (currentTab === 'jobs' || currentTab === 'careers') {
+      targetTab = 'jobs';
+    } else if (currentTab === 'donations') {
+      targetTab = 'donations-manager';
+    } else if (currentTab === 'contact') {
+      targetTab = 'branding';
+    } else if (currentTab === 'gallery') {
+      targetTab = 'gallery-manager';
+    } else if (currentTab === 'placements') {
+      targetTab = 'placement-manager';
+    } else if (
+      currentTab.startsWith('about-') ||
+      currentTab.startsWith('academic-') ||
+      currentTab.startsWith('student-') ||
+      currentTab.startsWith('custmenu__')
+    ) {
+      let pageId = '';
+      if (currentTab.startsWith('about-')) {
+        pageId = currentTab.replace('about-', '');
+      } else if (currentTab.startsWith('academic-')) {
+        pageId = currentTab.replace('academic-', '');
+      } else if (currentTab.startsWith('student-')) {
+        pageId = currentTab.replace('student-', '');
+      } else if (currentTab.startsWith('custmenu__')) {
+        const parts = currentTab.split('__');
+        pageId = parts[parts.length - 1];
+      }
+
+      const specialized: Record<string, string> = {
+        'committee': 'committee-manager',
+        'hods': 'hods-manager',
+        'director': 'directors-manager',
+        'circulars': 'circulars-manager',
+        'ncte': 'ncte-manager',
+        'courses': 'courses-manager',
+        'admission': 'admission-manager',
+        'academic_results': 'results-manager',
+        'facilities': 'about-manager',
+        'draws': 'results-manager',
+        'results': 'results-manager',
+      };
+
+      if (specialized[pageId]) {
+        targetTab = specialized[pageId];
+      } else {
+        if (currentTab.startsWith('about-')) {
+          targetTab = 'about-manager';
+        } else if (currentTab.startsWith('academic-')) {
+          targetTab = 'academic-pages-manager';
+        } else if (currentTab.startsWith('student-')) {
+          targetTab = 'student-pages-manager';
+        } else if (currentTab.startsWith('custmenu__')) {
+          const parts = currentTab.split('__');
+          const parentId = parts[1];
+          if (parentId === 'academic') {
+            targetTab = 'academic-pages-manager';
+          } else if (parentId === 'student') {
+            targetTab = 'student-pages-manager';
+          } else {
+            targetTab = 'about-manager';
+          }
+        }
+        editPageId = pageId;
+      }
+    }
+
+    sessionStorage.setItem('admin_active_sub_tab', targetTab);
+    if (editPageId) {
+      sessionStorage.setItem('admin_edit_page_id', editPageId);
+    } else {
+      sessionStorage.removeItem('admin_edit_page_id');
+    }
+
+    setCurrentTab('admin-dashboard');
+  };
 
   // Custom dialog box state
   const [modal, setModal] = useState<{
@@ -461,7 +549,6 @@ const MainAppContent: React.FC = () => {
               </div>
             )}
 
-            {/* 7. CONTACT US TAB */}
             {currentTab === 'contact' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-16 text-left">
                 <div className="space-y-6">
@@ -469,20 +556,93 @@ const MainAppContent: React.FC = () => {
                     <h1 className="text-3xl font-extrabold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
                       <MessageSquare className="w-8 h-8 text-primary" /> Contact Us
                     </h1>
-                    <p className="text-sm text-slate-500 font-medium">Have inquiries regarding the alumni association? We are here to support you.</p>
+                    <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                      {settings.contact_intro || "We, the Department of Sports & Physical Education, are always ready to provide information and answers to queries of students. We aim to resolve basic and common questions about courses and other related information."}
+                    </p>
                   </div>
 
-                  <div className="space-y-4 text-xs text-slate-600 dark:text-slate-300">
-                    <p>👤 <strong>Secretary:</strong> Dr. Shaikh Aiyaz Hussain Jiyaull Hussain</p>
-                    <p>🏫 <strong>Address:</strong> C/o Anjuman Khairul Islam's Poona College, 1647, Camp, New Modikhana, Pune</p>
-                    <p>📞 <strong>Mobile No.:</strong> 9422517809</p>
-                    <p>✉️ <strong>Email Id:</strong> aiyaz9422@yahoo.co.in</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Address Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                        <MapPin className="w-4 h-4 shrink-0" />
+                        <span>Postal Address</span>
+                      </div>
+                      <p className="text-[11px] text-slate-650 dark:text-slate-350 leading-normal font-medium whitespace-pre-line">
+                        {settings.contact_address || "Department of Sports & Physical Education,\nIravati Karve Social Science Complex, Behind SET Guest House,\nSavitribai Phule Pune University,\n(formerly University of Pune),\nPune - 411007, Maharashtra, INDIA."}
+                      </p>
+                    </div>
+
+                    {/* Timings Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                        <Clock className="w-4 h-4 shrink-0" />
+                        <span>Office Hours</span>
+                      </div>
+                      <div className="text-[11px] text-slate-650 dark:text-slate-350 leading-normal font-medium space-y-1.5">
+                        <p>
+                          <span className="font-bold text-slate-850 dark:text-white">Timings:</span><br />
+                          {settings.contact_timings || "10:30 am to 06:00 pm"}
+                        </p>
+                        {settings.contact_timings_note && (
+                          <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-955/20 p-2 rounded-xl border border-amber-105 dark:border-amber-900/25">
+                            ⚠️ {settings.contact_timings_note}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Phones Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                        <Phone className="w-4 h-4 shrink-0" />
+                        <span>Telephone Numbers</span>
+                      </div>
+                      <div className="text-[11px] text-slate-650 dark:text-slate-350 font-medium space-y-1">
+                        {settings.contact_phone1 && (
+                          <a href={`tel:${settings.contact_phone1.replace(/\s+/g, '')}`} className="block hover:underline hover:text-primary transition-colors">
+                            {settings.contact_phone1}
+                          </a>
+                        )}
+                        {settings.contact_phone2 && (
+                          <a href={`tel:${settings.contact_phone2.replace(/\s+/g, '')}`} className="block hover:underline hover:text-primary transition-colors">
+                            {settings.contact_phone2}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Emails Card */}
+                    <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+                      <div className="flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-wider">
+                        <Mail className="w-4 h-4 shrink-0" />
+                        <span>E-mail Address</span>
+                      </div>
+                      <div className="text-[10px] text-slate-650 dark:text-slate-355 font-medium space-y-1.5 leading-normal">
+                        {settings.contact_email1 && (
+                          <p>
+                            <span className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Primary Contact</span><br />
+                            <a href={`mailto:${settings.contact_email1}`} className="hover:underline hover:text-primary block transition-colors">
+                              {settings.contact_email1}
+                            </a>
+                          </p>
+                        )}
+                        {settings.contact_email2 && (
+                          <p>
+                            <span className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Administration</span><br />
+                            <a href={`mailto:${settings.contact_email2}`} className="hover:underline hover:text-primary block transition-colors">
+                              {settings.contact_email2}
+                            </a>
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Google Map */}
                   <div className="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-slate-100">
                     <iframe 
-                      src="https://maps.google.com/maps?q=Poona%20College,%20Camp,%20Pune&t=&z=15&ie=UTF8&iwloc=&output=embed" 
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(settings.contact_map_query || 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune')}&t=&z=15&ie=UTF8&iwloc=&output=embed`} 
                       className="w-full h-full border-0" 
                       allowFullScreen={true} 
                       loading="lazy"
@@ -491,7 +651,7 @@ const MainAppContent: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="glass-card p-8 rounded-3xl border border-slate-200/50 flex flex-col justify-center">
+                <div className="glass-card p-8 rounded-3xl border border-slate-200/50 flex flex-col h-fit">
                   <h3 className="font-extrabold text-lg mb-4">Send Us a Message</h3>
                   <form
                     onSubmit={(e) => {
@@ -766,6 +926,21 @@ const MainAppContent: React.FC = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {currentUser?.role === 'admin' && !['admin-dashboard', 'student-dashboard', 'alumni-dashboard', 'login-selection'].includes(currentTab) && (
+        <div className="fixed bottom-6 left-6 z-50">
+          <button
+            onClick={handleEditPageClick}
+            className="flex items-center gap-2.5 px-5 py-3.5 rounded-full text-slate-900 font-black uppercase tracking-wider text-xs shadow-2xl hover:shadow-primary/30 hover:-translate-y-1 active:translate-y-0 active:scale-95 transition-all duration-300 cursor-pointer group border border-white/20 dark:border-slate-800/80 backdrop-blur-md"
+            style={{
+              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-accent) 100%)',
+            }}
+          >
+            <Edit3 className="w-4 h-4 text-slate-900 group-hover:rotate-12 transition-transform duration-300" />
+            <span>Edit Page</span>
+          </button>
         </div>
       )}
     </div>

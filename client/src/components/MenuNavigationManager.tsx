@@ -24,7 +24,52 @@ interface MenuNavigationManagerProps {
     message: string;
     onConfirm: () => void;
   }>>;
+  onNavigateToTab?: (tab: string, pageId?: string) => void;
 }
+
+// Maps page IDs to specialized admin tabs
+const getTargetTabForPage = (pageId: string, parentMenu: string, menuType: string) => {
+  const specialized: Record<string, string> = {
+    'committee': 'committee-manager',
+    'hods': 'hods-manager',
+    'director': 'directors-manager',
+    'circulars': 'circulars-manager',
+    'ncte': 'ncte-manager',
+    'courses': 'courses-manager',
+    'admission': 'admission-manager',
+    'academic_results': 'results-manager',
+    'events': 'events-manager',
+    'stories': 'spotlight-manager',
+    'gallery': 'gallery-manager',
+    'placements': 'placement-manager',
+    'donations': 'donations-manager',
+    'about_us': 'about-manager', // 'about_us' is edited under about-manager
+    'careers': 'jobs',
+    'draws': 'results-manager',
+    'results': 'results-manager',
+    'contact': 'branding',
+  };
+
+  if (specialized[pageId]) {
+    return { tab: specialized[pageId], isSpecialized: true };
+  }
+
+  // Generic static page managers based on parent menu
+  if (parentMenu === 'about') {
+    return { tab: 'about-manager', isSpecialized: false };
+  }
+  if (parentMenu === 'academic') {
+    return { tab: 'academic-pages-manager', isSpecialized: false };
+  }
+  if (parentMenu === 'student') {
+    return { tab: 'student-pages-manager', isSpecialized: false };
+  }
+  if (parentMenu === 'none' && menuType === 'standalone') {
+    return { tab: 'standalone-pages-manager', isSpecialized: false };
+  }
+
+  return { tab: '', isSpecialized: false };
+};
 
 // System-locked pages which cannot be deleted or have their Slugs modified
 const SYSTEM_PAGE_IDS = [
@@ -37,7 +82,8 @@ const SYSTEM_PAGE_IDS = [
 export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
   allPages,
   onRefresh,
-  setConfirmDialog
+  setConfirmDialog,
+  onNavigateToTab
 }) => {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -66,6 +112,13 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
 
   // Open modal for editing
   const openEditModal = (page: PageItem) => {
+    // If page is managed by another specialized admin tab, redirect to it
+    const target = getTargetTabForPage(page.id, page.parent_menu, page.menu_type);
+    if (target.tab && onNavigateToTab) {
+      onNavigateToTab(target.tab, target.isSpecialized ? undefined : page.id);
+      return;
+    }
+
     setErrorMsg('');
     setSuccessMsg('');
     setLoading(true);
@@ -98,6 +151,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
         setErrorMsg('Failed to load full page details.');
       });
   };
+
 
   // Open modal for creating new
   const openCreateModal = () => {
@@ -146,6 +200,14 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
     const updated = [...formSliderSlides];
     updated[idx] = { ...updated[idx], [field]: value };
     setFormSliderSlides(updated);
+  };
+
+  const handleSlideImageUpload = (idx: number, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateSlideField(idx, 'image_url', reader.result as string);
+    };
+    reader.readAsDataURL(file);
   };
 
   // Save changes
@@ -284,6 +346,287 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
   };
 
+
+  if (modalOpen) {
+    return (
+      <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4 gap-4">
+          <div>
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="flex items-center gap-1.5 text-xs font-bold text-primary hover:underline cursor-pointer mb-2"
+            >
+              ← Back to Portal Menu & Navigation Manager
+            </button>
+            <h2 className="text-2xl font-bold tracking-tight text-slate-800 dark:text-white flex items-center gap-2">
+              {editingPage ? <Edit3 className="w-5 h-5 text-primary" /> : <Plus className="w-5 h-5 text-primary" />}
+              {editingPage ? `Edit Menu / Page: "${formTitle}"` : 'Create Custom Menu Item & Page'}
+            </h2>
+          </div>
+        </div>
+
+        {errorMsg && <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-semibold">{errorMsg}</div>}
+        {successMsg && <div className="bg-emerald-550 text-emerald-600 p-3 rounded-xl text-xs font-semibold">{successMsg}</div>}
+
+        <form onSubmit={handleSave} className="space-y-6 text-xs text-left">
+          {/* Core configuration metadata */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu / Page Title</label>
+              <input
+                type="text"
+                required
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="e.g. Sports Rules"
+                className="glass-input text-xs font-semibold py-2.5"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page ID / Slug</label>
+              <input
+                type="text"
+                required
+                disabled={editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id)}
+                value={formId}
+                onChange={(e) => setFormId(e.target.value)}
+                placeholder="e.g. sports-rules"
+                className="glass-input text-xs font-semibold py-2.5 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-800"
+              />
+              {editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id) && (
+                <span className="text-[9px] text-amber-500 font-medium">System Slug locked to preserve routes.</span>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Placement Type</label>
+              <select
+                value={formMenuType}
+                onChange={(e) => setFormMenuType(e.target.value)}
+                disabled={editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id)}
+                className="glass-input text-xs py-2.5 cursor-pointer disabled:opacity-60"
+              >
+                <option value="child">Submenu Option (Child)</option>
+                <option value="parent">Dropdown Menu Parent</option>
+                <option value="standalone">Top-Level Direct Link</option>
+                <option value="sub-parent">Submenu Parent (Fly-out)</option>
+                <option value="sub-child">Level-3 Option (Sub-child)</option>
+              </select>
+            </div>
+
+            {(formMenuType === 'child' || formMenuType === 'sub-parent' || formMenuType === 'sub-child') && (
+              <div className="flex flex-col gap-1.5 sm:col-span-2">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  {formMenuType === 'sub-child' ? 'Attach to Submenu Parent' : 'Attach to Parent Menu'}
+                </label>
+                <select
+                  value={formParentMenu}
+                  onChange={(e) => setFormParentMenu(e.target.value)}
+                  className="glass-input text-xs py-2.5 cursor-pointer"
+                >
+                  {formMenuType === 'sub-child' ? (
+                    subParentOptions.map(p => (
+                      <option key={p.id} value={p.id}>{p.title} (#{p.id})</option>
+                    ))
+                  ) : (
+                    parentOptions.map(p => (
+                      <option key={p.id} value={p.id}>{p.title} (#{p.id})</option>
+                    ))
+                  )}
+                </select>
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order (Rank)</label>
+              <input
+                type="number"
+                value={formSortOrder}
+                onChange={(e) => setFormSortOrder(parseInt(e.target.value) || 0)}
+                className="glass-input text-xs py-2.5"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Display Status</label>
+              <select
+                value={formIsVisible}
+                onChange={(e) => setFormIsVisible(parseInt(e.target.value) || 0)}
+                className="glass-input text-xs py-2.5 cursor-pointer font-bold"
+              >
+                <option value={1}>Visible 🟢</option>
+                <option value={0}>Hidden 🔴</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Page Contents Details Editor (Only relevant if it can display page contents) */}
+          {formMenuType !== 'parent' && (
+            <div className="border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
+              
+              {/* Hero Slider settings (Placed Above Page Body Content) */}
+              <div className="p-5 border border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-950/10 rounded-2xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Image className="w-4 h-4 text-primary" />
+                    <h4 className="font-bold text-xs text-slate-800 dark:text-white">Hero Carousel Slider</h4>
+                  </div>
+                  <select
+                    value={formShowSlider}
+                    onChange={(e) => setFormShowSlider(parseInt(e.target.value) || 0)}
+                    className="glass-input text-[10px] font-bold py-1 px-2 cursor-pointer w-32"
+                  >
+                    <option value={0}>Disabled</option>
+                    <option value={1}>Enabled</option>
+                  </select>
+                </div>
+
+                {formShowSlider === 1 && (
+                  <div className="space-y-4 pt-2">
+                    {formSliderSlides.map((slide, idx) => (
+                      <div key={idx} className="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl relative space-y-3">
+                        <button
+                          type="button"
+                          onClick={() => removeSlide(idx)}
+                          className="absolute top-2 right-2 p-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
+                        >
+                          <Trash className="w-3.5 h-3.5" />
+                        </button>
+                        <h5 className="font-bold text-[10px] text-slate-450 uppercase tracking-widest">Slide #{idx + 1}</h5>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Slide Image (Upload or Paste URL)</label>
+                          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleSlideImageUpload(idx, file);
+                              }}
+                              className="glass-input text-[11px] file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 cursor-pointer flex-1"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Or paste Image URL"
+                              value={slide.image_url.startsWith('data:image') ? '[Uploaded Image]' : slide.image_url}
+                              onChange={(e) => updateSlideField(idx, 'image_url', e.target.value)}
+                              className="glass-input text-[11px] py-2 flex-1"
+                            />
+                          </div>
+                          {slide.image_url && (
+                            <div className="relative w-24 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 flex items-center justify-center">
+                              <img src={slide.image_url} alt="Slide Preview" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <input
+                            type="text"
+                            placeholder="Main Title"
+                            value={slide.title}
+                            onChange={(e) => updateSlideField(idx, 'title', e.target.value)}
+                            className="glass-input text-[11px] py-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Subtitle"
+                            value={slide.subtitle}
+                            onChange={(e) => updateSlideField(idx, 'subtitle', e.target.value)}
+                            className="glass-input text-[11px] py-2"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Button Link"
+                            value={slide.btn_link}
+                            onChange={(e) => updateSlideField(idx, 'btn_link', e.target.value)}
+                            className="glass-input text-[11px] py-2"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={addSlide}
+                      className="w-full py-2.5 border border-dashed border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:text-primary hover:border-primary/50 rounded-xl transition-all cursor-pointer"
+                    >
+                      + Add Slide to Hero Carousel
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Page Body Content (Placed Below Hero Carousel Slider) */}
+              <div className="flex flex-col gap-2">
+                <h4 className="font-extrabold text-xs text-slate-800 dark:text-white uppercase tracking-wider">Page Body Content</h4>
+                <RichTextEditor
+                  value={formContent}
+                  onChange={setFormContent}
+                  placeholder="Write your custom static page contents in full HTML..."
+                />
+              </div>
+
+              {/* Document Attachment */}
+              <div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4>
+                  <p className="text-[10px] text-slate-500">Provide a downloadable PDF, guidelines, or notice document</p>
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
+                    onChange={handleFileUpload}
+                    className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
+                  />
+                </div>
+                {formFileName && (
+                  <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
+                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{formFileName}</span>
+                    <button
+                      type="button"
+                      onClick={() => { setFormFileUrl(null); setFormFileName(null); }}
+                      className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-slate-200 dark:border-slate-800 pt-6 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setModalOpen(false)}
+              className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold text-slate-600 dark:text-slate-350 cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary px-8 py-2.5 text-slate-900 font-bold flex items-center gap-2 cursor-pointer shadow-lg disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" /> Saving...
+                </>
+              ) : (
+                'Save Navigation / Page'
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -374,13 +717,15 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
                       </button>
 
                       {/* Edit */}
-                      <button
-                        onClick={() => openEditModal(item)}
-                        className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-450 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
-                        title="Edit Page / Menu"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
+                      {item.menu_type === 'parent' && (
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-450 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+                          title="Edit Menu"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
 
                       {/* Delete */}
                       <button
@@ -412,7 +757,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
                                 System
                               </span>
                             )}
-                            <span className="text-[9px] text-slate-400 font-mono">
+                            <span className="text-[9px] text-slate-440 font-mono">
                               #{child.id}
                             </span>
                           </div>
@@ -444,12 +789,14 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
                               {child.is_visible === 1 ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                             </button>
 
-                            <button
-                              onClick={() => openEditModal(child)}
-                              className="p-1 rounded bg-blue-50 dark:bg-blue-950/25 text-blue-600 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
-                            >
-                              <Edit3 className="w-3 h-3" />
-                            </button>
+                            {child.menu_type === 'sub-parent' && (
+                              <button
+                                onClick={() => openEditModal(child)}
+                                className="p-1 rounded bg-blue-50 dark:bg-blue-950/25 text-blue-600 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
+                              >
+                                <Edit3 className="w-3 h-3" />
+                              </button>
+                            )}
 
                             <button
                               onClick={() => handleDeletePage(child)}
@@ -513,13 +860,6 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
                                 </button>
 
                                 <button
-                                  onClick={() => openEditModal(sub)}
-                                  className="p-1 rounded bg-blue-50 dark:bg-blue-950/25 text-blue-600 hover:bg-blue-600 hover:text-white transition-all cursor-pointer"
-                                >
-                                  <Edit3 className="w-3 h-3" />
-                                </button>
-
-                                <button
                                   onClick={() => handleDeletePage(sub)}
                                   disabled={isSubSystem}
                                   className={`p-1 rounded transition-all ${isSubSystem ? 'text-slate-200 dark:text-slate-800' : 'bg-rose-50 dark:bg-rose-950/25 text-rose-600 hover:bg-rose-600 hover:text-white cursor-pointer'}`}
@@ -539,261 +879,6 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
           )}
         </div>
       </div>
-
-      {/* CREATE / EDIT MODAL DIALOG */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="glass-card w-full max-w-4xl rounded-3xl border border-slate-200 dark:border-slate-800/80 shadow-2xl p-6 sm:p-8 space-y-6 max-h-[90vh] overflow-y-auto bg-white dark:bg-slate-950">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
-                {editingPage ? <Edit3 className="w-5 h-5 text-primary" /> : <Plus className="w-5 h-5 text-primary" />}
-                {editingPage ? `Edit Menu / Page: "${formTitle}"` : 'Create Custom Menu Item & Page'}
-              </h3>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {errorMsg && <div className="bg-rose-50 text-rose-600 p-3 rounded-xl text-xs font-semibold">{errorMsg}</div>}
-            {successMsg && <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl text-xs font-semibold">{successMsg}</div>}
-
-            <form onSubmit={handleSave} className="space-y-6 text-xs text-left">
-              {/* Core configuration metadata */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu / Page Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={formTitle}
-                    onChange={(e) => setFormTitle(e.target.value)}
-                    placeholder="e.g. Sports Rules"
-                    className="glass-input text-xs font-semibold py-2.5"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Page ID / Slug</label>
-                  <input
-                    type="text"
-                    required
-                    disabled={editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id)}
-                    value={formId}
-                    onChange={(e) => setFormId(e.target.value)}
-                    placeholder="e.g. sports-rules"
-                    className="glass-input text-xs font-semibold py-2.5 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-800"
-                  />
-                  {editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id) && (
-                    <span className="text-[9px] text-amber-500 font-medium">System Slug locked to preserve routes.</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Menu Placement Type</label>
-                  <select
-                    value={formMenuType}
-                    onChange={(e) => setFormMenuType(e.target.value)}
-                    disabled={editingPage !== null && SYSTEM_PAGE_IDS.includes(editingPage.id)}
-                    className="glass-input text-xs py-2.5 cursor-pointer disabled:opacity-60"
-                  >
-                    <option value="child">Submenu Option (Child)</option>
-                    <option value="parent">Dropdown Menu Parent</option>
-                    <option value="standalone">Top-Level Direct Link</option>
-                    <option value="sub-parent">Submenu Parent (Fly-out)</option>
-                    <option value="sub-child">Level-3 Option (Sub-child)</option>
-                  </select>
-                </div>
-
-                {(formMenuType === 'child' || formMenuType === 'sub-parent' || formMenuType === 'sub-child') && (
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                      {formMenuType === 'sub-child' ? 'Attach to Submenu Parent' : 'Attach to Parent Menu'}
-                    </label>
-                    <select
-                      value={formParentMenu}
-                      onChange={(e) => setFormParentMenu(e.target.value)}
-                      className="glass-input text-xs py-2.5 cursor-pointer"
-                    >
-                      {formMenuType === 'sub-child' ? (
-                        subParentOptions.map(p => (
-                          <option key={p.id} value={p.id}>{p.title} (#{p.id})</option>
-                        ))
-                      ) : (
-                        parentOptions.map(p => (
-                          <option key={p.id} value={p.id}>{p.title} (#{p.id})</option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Sort Order (Rank)</label>
-                  <input
-                    type="number"
-                    value={formSortOrder}
-                    onChange={(e) => setFormSortOrder(parseInt(e.target.value) || 0)}
-                    className="glass-input text-xs py-2.5"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Display Status</label>
-                  <select
-                    value={formIsVisible}
-                    onChange={(e) => setFormIsVisible(parseInt(e.target.value) || 0)}
-                    className="glass-input text-xs py-2.5 cursor-pointer font-bold"
-                  >
-                    <option value={1}>Visible 🟢</option>
-                    <option value={0}>Hidden 🔴</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Page Contents Details Editor (Only relevant if it can display page contents) */}
-              {formMenuType !== 'parent' && (
-                <div className="border-t border-slate-200 dark:border-slate-800 pt-6 space-y-6">
-                  <div className="flex flex-col gap-2">
-                    <h4 className="font-extrabold text-xs text-slate-800 dark:text-white uppercase tracking-wider">Page Body Content</h4>
-                    <RichTextEditor
-                      value={formContent}
-                      onChange={setFormContent}
-                      placeholder="Write your custom static page contents in full HTML..."
-                    />
-                  </div>
-
-                  {/* Document Attachment */}
-                  <div className="p-4 border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-xs text-slate-800 dark:text-white">Document Attachment (Optional)</h4>
-                      <p className="text-[10px] text-slate-500">Provide a downloadable PDF, guidelines, or notice document</p>
-                      <input
-                        type="file"
-                        accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg"
-                        onChange={handleFileUpload}
-                        className="glass-input file:mr-4 file:py-1 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-bold file:bg-primary file:text-slate-900 hover:file:bg-primary-dark cursor-pointer text-[11px] w-full"
-                      />
-                    </div>
-                    {formFileName && (
-                      <div className="flex items-center gap-2 p-2 px-3 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-900 rounded-lg max-w-xs truncate shadow-sm">
-                        <FileText className="w-4 h-4 text-primary shrink-0" />
-                        <span className="text-[11px] font-medium text-slate-700 dark:text-slate-350 truncate">{formFileName}</span>
-                        <button
-                          type="button"
-                          onClick={() => { setFormFileUrl(null); setFormFileName(null); }}
-                          className="text-rose-500 hover:text-rose-600 font-bold text-xs shrink-0 cursor-pointer ml-1"
-                        >
-                          Clear
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Hero Slider settings */}
-                  <div className="p-5 border border-slate-200 dark:border-slate-800 bg-slate-50/20 dark:bg-slate-950/10 rounded-2xl space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Image className="w-4 h-4 text-primary" />
-                        <h4 className="font-bold text-xs text-slate-800 dark:text-white">Hero Carousel Slider</h4>
-                      </div>
-                      <select
-                        value={formShowSlider}
-                        onChange={(e) => setFormShowSlider(parseInt(e.target.value) || 0)}
-                        className="glass-input text-[10px] font-bold py-1 px-2 cursor-pointer w-32"
-                      >
-                        <option value={0}>Disabled</option>
-                        <option value={1}>Enabled</option>
-                      </select>
-                    </div>
-
-                    {formShowSlider === 1 && (
-                      <div className="space-y-4 pt-2">
-                        {formSliderSlides.map((slide, idx) => (
-                          <div key={idx} className="p-4 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-xl relative space-y-3">
-                            <button
-                              type="button"
-                              onClick={() => removeSlide(idx)}
-                              className="absolute top-2 right-2 p-1.5 bg-rose-50 dark:bg-rose-950/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all cursor-pointer"
-                            >
-                              <Trash className="w-3.5 h-3.5" />
-                            </button>
-                            <h5 className="font-bold text-[10px] text-slate-450 uppercase tracking-widest">Slide #{idx + 1}</h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <input
-                                type="text"
-                                placeholder="Image URL"
-                                value={slide.image_url}
-                                onChange={(e) => updateSlideField(idx, 'image_url', e.target.value)}
-                                className="glass-input text-[11px] py-2"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Main Title"
-                                value={slide.title}
-                                onChange={(e) => updateSlideField(idx, 'title', e.target.value)}
-                                className="glass-input text-[11px] py-2"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Subtitle"
-                                value={slide.subtitle}
-                                onChange={(e) => updateSlideField(idx, 'subtitle', e.target.value)}
-                                className="glass-input text-[11px] py-2"
-                              />
-                              <input
-                                type="text"
-                                placeholder="Button Link"
-                                value={slide.btn_link}
-                                onChange={(e) => updateSlideField(idx, 'btn_link', e.target.value)}
-                                className="glass-input text-[11px] py-2"
-                              />
-                            </div>
-                          </div>
-                        ))}
-                        <button
-                          type="button"
-                          onClick={addSlide}
-                          className="w-full py-2.5 border border-dashed border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 hover:text-primary hover:border-primary/50 rounded-xl transition-all cursor-pointer"
-                        >
-                          + Add Slide to Hero Carousel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="border-t border-slate-200 dark:border-slate-800 pt-6 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-6 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 font-bold text-slate-600 dark:text-slate-350 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary px-8 py-2.5 text-slate-900 font-bold flex items-center gap-2 cursor-pointer shadow-lg disabled:opacity-50"
-                >
-                  {loading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 animate-spin" /> Saving...
-                    </>
-                  ) : (
-                    'Save Navigation / Page'
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

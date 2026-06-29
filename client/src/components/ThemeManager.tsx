@@ -113,6 +113,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     // Update browser title tab dynamically!
     document.title = settings.univ_name + ' | Portal';
+
+    // Update favicon dynamically based on logo!
+    if (settings.logo_url) {
+      let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
+      if (!link) {
+        link = document.createElement('link');
+        link.type = 'image/x-icon';
+        link.rel = 'shortcut icon';
+        document.getElementsByTagName('head')[0].appendChild(link);
+      }
+      link.href = settings.logo_url;
+    }
   }, [settings]);
 
   // Sync dark mode class

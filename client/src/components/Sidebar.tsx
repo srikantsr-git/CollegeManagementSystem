@@ -46,8 +46,6 @@ export const adminItems: NavigationItem[] = [
   { id: 'directors-manager', label: 'Manage Directors', description: 'Manage Physical Education Directors index', icon: Users },
   { id: 'hods-manager', label: 'Manage HODs Desk', description: 'Update messages from HODs and Directors desk', icon: Users },
   { id: 'results-manager', label: 'Draws & Results', description: 'Publish sports tournament results and schedules', icon: Trophy },
-  { id: 'about-manager', label: 'Manage Static pages', description: 'Manage static pages and core information under About', icon: FileText },
-  { id: 'academic-pages-manager', label: 'Manage Academic Pages', description: 'Manage custom pages under the Academic menu dropdown', icon: FileText },
   { id: 'courses-manager', label: 'Manage Courses', description: 'Manage undergraduate and postgraduate courses', icon: BookOpen },
   { id: 'admission-manager', label: 'Manage Admissions', description: 'Manage admission announcements and eligibility details', icon: UserCheck },
   { id: 'jobs', label: 'Post / Apply Jobs', description: 'Moderate and review posted career opportunities', icon: Briefcase },
@@ -56,7 +54,7 @@ export const adminItems: NavigationItem[] = [
   { id: 'placement-manager', label: 'Placement Manager', description: 'Manage placement page content and recruiter company logos', icon: Briefcase },
   { id: 'slider-manager', label: 'Hero Slider', description: 'Update home page hero slider slides and images', icon: SlidersHorizontal },
   { id: 'donations-manager', label: 'Donations Tracker', description: 'Track and audit donor contributions and campaigns', icon: Heart },
-  { id: 'branding', label: 'Branding Settings', description: 'Customize logos, college name, and theme presets', icon: Settings },
+  { id: 'branding', label: 'Home/Branding Settings', description: 'Customize logos, college name, and theme presets', icon: Settings },
   { id: 'analytics', label: 'System Analytics', description: 'Inspect portal traffic, demographics, and trends', icon: BarChart3 },
 ];
 
@@ -76,11 +74,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ role, activeTab, setActiveTab 
     },
     {
       title: "About Us Dropdown Menu",
-      items: ["about-manager", "committee-manager", "directors-manager", "hods-manager", "circulars-manager", "ncte-manager"]
+      items: ["committee-manager", "directors-manager", "hods-manager", "circulars-manager", "ncte-manager"]
     },
     {
       title: "Academic Dropdown Menu",
-      items: ["academic-pages-manager", "courses-manager", "admission-manager"]
+      items: ["courses-manager", "admission-manager"]
     },
     {
       title: "Student Corner Dropdown",

@@ -4,8 +4,12 @@ import {
   Activity, FileText, BookOpen, CalendarDays, Trophy,
   ChevronRight, ExternalLink, Loader2, Filter, Download,
   Phone, Mail, X, ShieldCheck, UserCheck, FileSpreadsheet, Eye,
-  Home, Building2, FlaskConical, FolderOpen, Star, Newspaper, Briefcase
+  Home, Building2, FlaskConical, FolderOpen, Star, Newspaper, Briefcase,
+  MapPin, Heart, Send, Search
 } from 'lucide-react';
+import { useTheme } from '../components/ThemeManager';
+import GalleryPage from './GalleryPage';
+import PlacementPage from './PlacementPage';
 
 interface AboutPageProps {
   subpageId: string;
@@ -63,7 +67,7 @@ function getMeta(id: string) {
   return ABOUT_PAGES.find((p) => p.id === id) ?? ABOUT_PAGES[0];
 }
 
-// â”€â”€â”€ Category badge colors â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ————————————————— Category badge colors ——————————————————————————————————————
 const CATEGORY_COLORS: Record<string, string> = {
   Result:    'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400',
   Draw:      'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400',
@@ -73,11 +77,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   Standings: 'bg-rose-100 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400',
 };
 
-// â”€â”€â”€ Results Feed Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Results Feed Component ───────────────────────────────────────────────────────
 const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
   const [results, setResults] = useState<ResultItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sportFilter, setSportFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('newest');
+
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetch('http://localhost:5001/api/results')
@@ -85,6 +94,10 @@ const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
       .then(data => { setResults(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType, sportFilter]);
 
   const sports = ['All', ...Array.from(new Set(results.map(r => r.sport)))];
   
@@ -96,7 +109,35 @@ const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
     return !isDrawType; // results
   });
 
-  const filtered = sportFilter === 'All' ? modeFiltered : modeFiltered.filter(r => r.sport === sportFilter);
+  const sportFiltered = sportFilter === 'All' ? modeFiltered : modeFiltered.filter(r => r.sport === sportFilter);
+
+  let processed = sportFiltered.filter(r => {
+    const query = searchQuery.toLowerCase();
+    return (r.title || '').toLowerCase().includes(query) || 
+           (r.description || '').toLowerCase().includes(query) || 
+           (r.sport || '').toLowerCase().includes(query);
+  });
+
+  if (filterType === 'with-downloads') {
+    processed = processed.filter(r => r.file_url);
+  } else if (filterType === 'without-downloads') {
+    processed = processed.filter(r => !r.file_url);
+  }
+
+  processed = [...processed].sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+    if (filterType === 'oldest') {
+      return dateA - dateB;
+    }
+    return dateB - dateA;
+  });
+
+  const totalItems = processed.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = processed.slice(indexOfFirstItem, indexOfLastItem);
 
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
@@ -106,82 +147,156 @@ const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
   );
 
   return (
-    <div className="space-y-4">
-      {/* Sport filter pills */}
-      {sports.length > 2 && (
-        <div className="flex flex-wrap gap-2 items-center pb-1">
-          <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          {sports.map(s => (
-            <button
-              key={s}
-              onClick={() => setSportFilter(s)}
-              className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer ${
-                sportFilter === s
-                  ? 'bg-primary text-white shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary-light dark:hover:bg-primary/10'
-              }`}
-            >{s}</button>
-          ))}
+    <div className="space-y-5 text-left">
+      {/* Sport filter pills & Search bar */}
+      {results.length > 0 && (
+        <div className="space-y-4">
+          {sports.length > 2 && (
+            <div className="flex flex-wrap gap-2 items-center pb-1">
+              <Filter className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              {sports.map(s => (
+                <button
+                  key={s}
+                  onClick={() => setSportFilter(s)}
+                  className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-all cursor-pointer ${
+                    sportFilter === s
+                      ? 'bg-primary text-white shadow-md'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-primary hover:bg-primary-light dark:hover:bg-primary/10'
+                  }`}
+                >{s}</button>
+              ))}
+            </div>
+          )}
+
+          {/* Search bar & filter dropdown */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0">
+              <span>Filter & Sort:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="with-downloads">With Downloads</option>
+                <option value="without-downloads">Without Downloads</option>
+              </select>
+            </div>
+          </div>
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {processed.length === 0 ? (
         <div className="text-center py-14 space-y-3">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
-            <Trophy className="w-7 h-7 text-amber-500" />
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-105 dark:bg-slate-800/50 flex items-center justify-center animate-pulse">
+            <Search className="w-6 h-6 text-slate-400" />
           </div>
-          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No results published yet</p>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Check back soon for tournament draws and match results.</p>
+          <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No matches found</p>
+          <p className="text-xs text-slate-400 dark:text-slate-555">Try checking your spelling or searching for a different keyword.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((r) => (
-            <div key={r.id}
-              className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
-            >
-              <div className="flex items-start gap-4 p-5">
-                <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-sm mt-0.5">
-                  <Trophy className="w-5 h-5 text-white" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary-light dark:bg-primary/10 text-primary uppercase tracking-wide">
-                      {r.sport}
-                    </span>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${CATEGORY_COLORS[r.category] || 'bg-slate-100 text-slate-600'}`}>
-                      {r.category}
-                    </span>
-                    <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
-                      <Clock className="w-3 h-3" />
-                      {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
+        <>
+          <div className="space-y-3">
+            {currentItems.map((r) => (
+              <div key={r.id}
+                className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
+              >
+                <div className="flex items-start gap-4 p-5">
+                  <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center shadow-sm mt-0.5">
+                    <Trophy className="w-5 h-5 text-white" />
                   </div>
 
-                  <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{r.title}</h3>
-
-                  {r.description && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: r.description }} />
-                  )}
-
-                  {r.file_url && r.file_name && (
-                    <div className="mt-3 flex items-center gap-2.5 flex-wrap">
-                      <a href={r.file_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
-                        <ExternalLink className="w-3 h-3" /> View
-                      </a>
-                      <a href={r.file_url} download={r.file_name}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-                        <Download className="w-3 h-3" /> Download
-                      </a>
-                      <span className="text-[10px] text-slate-400 truncate">{r.file_name}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                      <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary-light dark:bg-primary/10 text-primary uppercase tracking-wide">
+                        {r.sport}
+                      </span>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide ${CATEGORY_COLORS[r.category] || 'bg-slate-100 text-slate-655'}`}>
+                        {r.category}
+                      </span>
+                      <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                        <Clock className="w-3 h-3" />
+                        {new Date(r.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
                     </div>
-                  )}
+
+                    <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{r.title}</h3>
+
+                    {r.description && (
+                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: r.description }} />
+                    )}
+
+                    {r.file_url && r.file_name && (
+                      <div className="mt-3 flex items-center gap-2.5 flex-wrap">
+                        <a href={r.file_url} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
+                          <ExternalLink className="w-3 h-3" /> View
+                        </a>
+                        <a href={r.file_url} download={r.file_name}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                          <Download className="w-3 h-3" /> Download
+                        </a>
+                        <span className="text-[10px] text-slate-400 truncate">{r.file_name}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+            ))}
+          </div>
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-205/50 dark:border-slate-800/40 text-xs font-semibold text-slate-555">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-primary text-slate-900 font-extrabold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-primary hover:text-slate-900'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -476,6 +591,11 @@ const AdmissionPanel: React.FC<{
 const CircularsPanel: React.FC = () => {
   const [circulars, setCirculars] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('newest');
+
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetch('http://localhost:5001/api/circulars')
@@ -484,6 +604,10 @@ const CircularsPanel: React.FC = () => {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
       <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -491,8 +615,34 @@ const CircularsPanel: React.FC = () => {
     </div>
   );
 
+  let processed = circulars.filter(c => {
+    const query = searchQuery.toLowerCase();
+    return (c.title || '').toLowerCase().includes(query) || (c.description || '').toLowerCase().includes(query);
+  });
+
+  if (filterType === 'with-downloads') {
+    processed = processed.filter(c => c.file_url);
+  } else if (filterType === 'without-downloads') {
+    processed = processed.filter(c => !c.file_url);
+  }
+
+  processed = [...processed].sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+    if (filterType === 'oldest') {
+      return dateA - dateB;
+    }
+    return dateB - dateA;
+  });
+
+  const totalItems = processed.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = processed.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 text-left">
       {circulars.length === 0 ? (
         <div className="text-center py-14 space-y-3">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center">
@@ -502,48 +652,128 @@ const CircularsPanel: React.FC = () => {
           <p className="text-xs text-slate-400 dark:text-slate-500">Check back soon for official circulars and notices.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {circulars.map((c) => (
-            <div key={c.id}
-              className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
-            >
-              <div className="flex items-start gap-4 p-5">
-                <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm mt-0.5">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
+        <>
+          {/* Search bar & filter dropdown */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search circulars..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-200"
+              />
+            </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
-                      <Clock className="w-3 h-3" />
-                      {new Date(c.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0">
+              <span>Filter & Sort:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="with-downloads">With Downloads</option>
+                <option value="without-downloads">Without Downloads</option>
+              </select>
+            </div>
+          </div>
 
-                  <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{c.title}</h3>
-
-                  {c.description && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: c.description }} />
-                  )}
-
-                  {c.file_url && c.file_name && (
-                    <div className="mt-3 flex items-center gap-2.5 flex-wrap">
-                      <a href={c.file_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
-                        <ExternalLink className="w-3 h-3" /> View
-                      </a>
-                      <a href={c.file_url} download={c.file_name}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-                        <Download className="w-3 h-3" /> Download
-                      </a>
-                      <span className="text-[10px] text-slate-400 truncate">{c.file_name}</span>
+          {processed.length === 0 ? (
+            <div className="text-center py-14 space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-105 dark:bg-slate-800/50 flex items-center justify-center animate-pulse">
+                <Search className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No matches found</p>
+              <p className="text-xs text-slate-400 dark:text-slate-550">Try checking your spelling or searching for a different keyword.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {currentItems.map((c) => (
+                <div key={c.id}
+                  className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
+                >
+                  <div className="flex items-start gap-4 p-5">
+                    <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-sm mt-0.5">
+                      <FileText className="w-5 h-5 text-white" />
                     </div>
-                  )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                          <Clock className="w-3 h-3" />
+                          {new Date(c.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{c.title}</h3>
+
+                      {c.description && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: c.description }} />
+                      )}
+
+                      {c.file_url && c.file_name && (
+                        <div className="mt-3 flex items-center gap-2.5 flex-wrap">
+                          <a href={c.file_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                          <a href={c.file_url} download={c.file_name}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                            <Download className="w-3 h-3" /> Download
+                          </a>
+                          <span className="text-[10px] text-slate-400 truncate">{c.file_name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-205/50 dark:border-slate-800/40 text-xs font-semibold text-slate-550">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-primary text-slate-900 font-extrabold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-primary hover:text-slate-900'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -553,6 +783,11 @@ const CircularsPanel: React.FC = () => {
 const NctePanel: React.FC = () => {
   const [ncte, setNcte] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('newest');
+
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetch('http://localhost:5001/api/ncte-disclosures')
@@ -561,6 +796,10 @@ const NctePanel: React.FC = () => {
       .catch(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
   if (loading) return (
     <div className="flex flex-col items-center justify-center py-16 gap-3">
       <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -568,8 +807,34 @@ const NctePanel: React.FC = () => {
     </div>
   );
 
+  let processed = ncte.filter(item => {
+    const query = searchQuery.toLowerCase();
+    return (item.title || '').toLowerCase().includes(query) || (item.description || '').toLowerCase().includes(query);
+  });
+
+  if (filterType === 'with-downloads') {
+    processed = processed.filter(item => item.file_url);
+  } else if (filterType === 'without-downloads') {
+    processed = processed.filter(item => !item.file_url);
+  }
+
+  processed = [...processed].sort((a, b) => {
+    const dateA = new Date(a.date || 0).getTime();
+    const dateB = new Date(b.date || 0).getTime();
+    if (filterType === 'oldest') {
+      return dateA - dateB;
+    }
+    return dateB - dateA;
+  });
+
+  const totalItems = processed.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = processed.slice(indexOfFirstItem, indexOfLastItem);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5 text-left">
       {ncte.length === 0 ? (
         <div className="text-center py-14 space-y-3">
           <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center">
@@ -579,48 +844,128 @@ const NctePanel: React.FC = () => {
           <p className="text-xs text-slate-400 dark:text-slate-500">Check back soon for regulatory submittals and disclosures.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {ncte.map((item) => (
-            <div key={item.id}
-              className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
-            >
-              <div className="flex items-start gap-4 p-5">
-                <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm mt-0.5">
-                  <ShieldCheck className="w-5 h-5 text-white" />
-                </div>
+        <>
+          {/* Search bar & filter dropdown */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search disclosures..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-200"
+              />
+            </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                    <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
-                      <Clock className="w-3 h-3" />
-                      {new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0">
+              <span>Filter & Sort:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="with-downloads">With Downloads</option>
+                <option value="without-downloads">Without Downloads</option>
+              </select>
+            </div>
+          </div>
 
-                  <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{item.title}</h3>
-
-                  {item.description && (
-                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: item.description }} />
-                  )}
-
-                  {item.file_url && item.file_name && (
-                    <div className="mt-3 flex items-center gap-2.5 flex-wrap">
-                      <a href={item.file_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
-                        <ExternalLink className="w-3 h-3" /> View
-                      </a>
-                      <a href={item.file_url} download={item.file_name}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
-                        <Download className="w-3 h-3" /> Download
-                      </a>
-                      <span className="text-[10px] text-slate-400 truncate">{item.file_name}</span>
+          {processed.length === 0 ? (
+            <div className="text-center py-14 space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-105 dark:bg-slate-800/50 flex items-center justify-center animate-pulse">
+                <Search className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No matches found</p>
+              <p className="text-xs text-slate-400 dark:text-slate-550">Try checking your spelling or searching for a different keyword.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {currentItems.map((item) => (
+                <div key={item.id}
+                  className="group glass-card rounded-2xl border border-slate-200/50 dark:border-slate-800/40 hover:border-primary/30 hover:shadow-md transition-all overflow-hidden"
+                >
+                  <div className="flex items-start gap-4 p-5">
+                    <div className="shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-sm mt-0.5">
+                      <ShieldCheck className="w-5 h-5 text-white" />
                     </div>
-                  )}
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold">
+                          <Clock className="w-3 h-3" />
+                          {new Date(item.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+
+                      <h3 className="font-bold text-sm text-slate-800 dark:text-white leading-snug">{item.title}</h3>
+
+                      {item.description && (
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed html-content" dangerouslySetInnerHTML={{ __html: item.description }} />
+                      )}
+
+                      {item.file_url && item.file_name && (
+                        <div className="mt-3 flex items-center gap-2.5 flex-wrap">
+                          <a href={item.file_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-primary hover:text-white transition-all">
+                            <ExternalLink className="w-3 h-3" /> View
+                          </a>
+                          <a href={item.file_url} download={item.file_name}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold bg-primary-light dark:bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all">
+                            <Download className="w-3 h-3" /> Download
+                          </a>
+                          <span className="text-[10px] text-slate-400 truncate">{item.file_name}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-205/50 dark:border-slate-800/40 text-xs font-semibold text-slate-550">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-primary text-slate-900 font-extrabold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 hover:bg-primary hover:text-slate-900'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -1136,6 +1481,371 @@ const PageHeroSlider: React.FC<{ slides: SlideItem[] }> = ({ slides }) => {
   );
 };
 
+// --- Donations Panel ---
+const DonationsPanel: React.FC = () => {
+  return (
+    <div className="space-y-6 text-left animate-in fade-in duration-200">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 flex flex-col justify-between h-64 text-left">
+          <div className="space-y-2">
+            <h3 className="font-bold text-base">Underprivileged Scholarship Fund</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">Supporting academically outstanding students requiring structural financial assistance.</p>
+          </div>
+          <button onClick={() => {
+            alert("Please log in or navigate to Alumni Dashboard to access the secure giving checkout.");
+          }} className="btn-primary w-full text-xs py-2 justify-center mt-4 font-bold">Sponsor Fund</button>
+        </div>
+
+        <div className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 flex flex-col justify-between h-64 text-left">
+          <div className="space-y-2">
+            <h3 className="font-bold text-base">AI Scientific Laboratory</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">Equipping labs with GPU computation centers and dynamic AI workspace research resources.</p>
+          </div>
+          <button onClick={() => {
+            alert("Please log in or navigate to Alumni Dashboard to access the secure giving checkout.");
+          }} className="btn-primary w-full text-xs py-2 justify-center mt-4 font-bold">Sponsor Lab</button>
+        </div>
+
+        <div className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/40 flex flex-col justify-between h-64 text-left">
+          <div className="space-y-2">
+            <h3 className="font-bold text-base">Campus Sports Arena</h3>
+            <p className="text-xs text-slate-500 leading-relaxed font-medium">Constructing indoor basketball courts, soccer turfs, and track facilities.</p>
+          </div>
+          <button onClick={() => {
+            alert("Please log in or navigate to Alumni Dashboard to access the secure giving checkout.");
+          }} className="btn-primary w-full text-xs py-2 justify-center mt-4 font-bold">Sponsor Arena</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Careers Panel ---
+const CareersPanel: React.FC = () => {
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterType, setFilterType] = useState('newest');
+
+  const itemsPerPage = 20;
+
+  useEffect(() => {
+    fetch('http://localhost:5001/api/jobs')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => { setJobs(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
+  if (loading) return (
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <Loader2 className="w-8 h-8 text-primary animate-spin" />
+      <p className="text-sm text-slate-500 animate-pulse">Loading career opportunities...</p>
+    </div>
+  );
+
+  let processed = jobs.filter(j => {
+    const query = searchQuery.toLowerCase();
+    return (
+      (j.title || '').toLowerCase().includes(query) ||
+      (j.company || '').toLowerCase().includes(query) ||
+      (j.description || '').toLowerCase().includes(query) ||
+      (j.location || '').toLowerCase().includes(query)
+    );
+  });
+
+  if (filterType === 'full-time') {
+    processed = processed.filter(j => (j.type || '').toLowerCase().includes('full'));
+  } else if (filterType === 'part-time') {
+    processed = processed.filter(j => (j.type || '').toLowerCase().includes('part') || (j.type || '').toLowerCase().includes('intern') || (j.type || '').toLowerCase().includes('temp'));
+  }
+
+  processed = [...processed].sort((a, b) => {
+    const dateA = new Date(a.date || a.created_at || 0).getTime();
+    const dateB = new Date(b.date || b.created_at || 0).getTime();
+    if (filterType === 'oldest') {
+      return dateA - dateB;
+    }
+    return dateB - dateA;
+  });
+
+  const totalItems = processed.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = processed.slice(indexOfFirstItem, indexOfLastItem);
+
+  return (
+    <div className="space-y-5 text-left animate-in fade-in duration-200">
+      {jobs.length === 0 ? (
+        <p className="text-slate-400 py-10 font-medium italic text-center">No career opportunities currently listed in database.</p>
+      ) : (
+        <>
+          {/* Search bar & filter dropdown */}
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-2">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search jobs..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 rounded-full text-xs font-semibold bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all text-slate-700 dark:text-slate-200"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0">
+              <span>Filter & Sort:</span>
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white/70 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="full-time">Full-time Only</option>
+                <option value="part-time">Part-time / Internships</option>
+              </select>
+            </div>
+          </div>
+
+          {processed.length === 0 ? (
+            <div className="text-center py-14 space-y-3">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-slate-105 dark:bg-slate-800/50 flex items-center justify-center animate-pulse">
+                <Search className="w-6 h-6 text-slate-400" />
+              </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No matches found</p>
+              <p className="text-xs text-slate-400 dark:text-slate-550">Try checking your spelling or searching for a different keyword.</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {currentItems.map((job) => (
+                <div key={job.id} className="glass-card p-6 rounded-3xl border border-slate-200/50 dark:border-slate-800/45 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-lg">{job.title}</h3>
+                      <span className="text-[10px] bg-primary-light text-primary font-bold px-2 py-0.5 rounded-full uppercase">
+                        {job.type}
+                      </span>
+                    </div>
+                    <p className="text-slate-500 text-xs flex flex-wrap gap-x-3 gap-y-1 font-semibold">
+                      <span>🏢 {job.company}</span>
+                      <span>📍 {job.location}</span>
+                      {job.salary && <span>💰 {job.salary}</span>}
+                    </p>
+                    <p className="text-xs text-slate-500 leading-relaxed font-light">{job.description}</p>
+                  </div>
+                  <button
+                    onClick={() => alert("Please log in or register as Student/Alumni to apply for career opportunities.")}
+                    className="btn-secondary text-xs py-2 px-5 shrink-0 border border-slate-300 dark:border-slate-700 text-slate-500 font-bold"
+                  >
+                    🔒 Sign in to Apply
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-205/50 dark:border-slate-800/40 text-xs font-semibold text-slate-550">
+              <div>
+                Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, totalItems)} of {totalItems} items
+              </div>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Previous
+                </button>
+                
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                      currentPage === page
+                        ? 'bg-primary text-slate-900 font-extrabold shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-655 dark:text-slate-400 hover:bg-primary hover:text-slate-900'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+
+                <button
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white disabled:opacity-50 disabled:hover:bg-slate-100 disabled:hover:text-slate-500 dark:disabled:hover:bg-slate-800 transition-all cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// --- Contact Panel ---
+const ContactPanel: React.FC = () => {
+  const { settings } = useTheme();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
+  const [msg, setMsg] = useState('');
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 text-left animate-in fade-in duration-200">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold">
+          {/* Address Card */}
+          <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+            <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider">
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span>Postal Address</span>
+            </div>
+            <p className="text-[11px] text-slate-650 dark:text-slate-350 leading-normal font-medium whitespace-pre-line">
+              {settings.contact_address || "Department of Sports & Physical Education,\nIravati Karve Social Science Complex, Behind SET Guest House,\nSavitribai Phule Pune University,\n(formerly University of Pune),\nPune - 411007, Maharashtra, INDIA."}
+            </p>
+          </div>
+
+          {/* Timings Card */}
+          <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+            <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider">
+              <Clock className="w-4 h-4 shrink-0" />
+              <span>Office Hours</span>
+            </div>
+            <div className="text-[11px] text-slate-650 dark:text-slate-350 leading-normal font-medium space-y-1.5">
+              <p>
+                <span className="font-bold text-slate-850 dark:text-white">Timings:</span><br />
+                {settings.contact_timings || "10:30 am to 06:00 pm"}
+              </p>
+              {settings.contact_timings_note && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-955/20 p-2 rounded-xl border border-amber-105 dark:border-amber-900/25 font-bold">
+                  ⚠️ {settings.contact_timings_note}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Phones Card */}
+          <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+            <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider">
+              <Phone className="w-4 h-4 shrink-0" />
+              <span>Telephone Numbers</span>
+            </div>
+            <div className="text-[11px] text-slate-650 dark:text-slate-350 font-medium space-y-1">
+              {settings.contact_phone1 && (
+                <a href={`tel:${settings.contact_phone1.replace(/\s+/g, '')}`} className="block hover:underline hover:text-primary transition-colors">
+                  {settings.contact_phone1}
+                </a>
+              )}
+              {settings.contact_phone2 && (
+                <a href={`tel:${settings.contact_phone2.replace(/\s+/g, '')}`} className="block hover:underline hover:text-primary transition-colors">
+                  {settings.contact_phone2}
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* Emails Card */}
+          <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800/40 bg-slate-50/50 dark:bg-slate-900/10 space-y-2">
+            <div className="flex items-center gap-2 text-primary font-bold text-[10px] uppercase tracking-wider">
+              <Mail className="w-4 h-4 shrink-0" />
+              <span>E-mail Address</span>
+            </div>
+            <div className="text-[10px] text-slate-650 dark:text-slate-355 font-medium space-y-1.5 leading-normal">
+              {settings.contact_email1 && (
+                <p>
+                  <span className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Primary Contact</span><br />
+                  <a href={`mailto:${settings.contact_email1}`} className="hover:underline hover:text-primary block transition-colors">
+                    {settings.contact_email1}
+                  </a>
+                </p>
+              )}
+              {settings.contact_email2 && (
+                <p>
+                  <span className="font-bold text-[9px] uppercase tracking-wider text-slate-400">Administration</span><br />
+                  <a href={`mailto:${settings.contact_email2}`} className="hover:underline hover:text-primary block transition-colors">
+                    {settings.contact_email2}
+                  </a>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Google Map */}
+        <div className="w-full h-64 rounded-3xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 bg-slate-100">
+          <iframe 
+            src={`https://maps.google.com/maps?q=${encodeURIComponent(settings.contact_map_query || 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune')}&t=&z=15&ie=UTF8&iwloc=&output=embed`} 
+            className="w-full h-full border-0" 
+            allowFullScreen={true} 
+            loading="lazy"
+            title="Google Map Location"
+          ></iframe>
+        </div>
+      </div>
+
+      <div className="glass-card p-8 rounded-3xl border border-slate-200/50 flex flex-col h-fit">
+        <h3 className="font-extrabold text-lg mb-4">Send Us a Message</h3>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            alert("Message submitted successfully! Our support team will reach out to you shortly.");
+            setName('');
+            setEmail('');
+            setMobile('');
+            setMsg('');
+          }}
+          className="space-y-4 text-xs font-semibold"
+        >
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Your Name</label>
+            <input
+              type="text" required placeholder="John Doe" className="glass-input"
+              value={name} onChange={e => setName(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Email Address</label>
+            <input
+              type="email" required placeholder="john.doe@gmail.com" className="glass-input"
+              value={email} onChange={e => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mobile No. *</label>
+            <input
+              type="tel" required placeholder="e.g. 9850710713" className="glass-input"
+              value={mobile} onChange={e => setMobile(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Message</label>
+            <textarea
+              rows={4} required placeholder="Detail your query..." className="glass-input resize-none"
+              value={msg} onChange={e => setMsg(e.target.value)}
+            ></textarea>
+          </div>
+          <button type="submit" className="btn-primary text-xs font-bold py-3.5 justify-center gap-1.5 cursor-pointer">
+            <span>Send Inquiries</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 // --- Main Component ---
 
 export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }) => {
@@ -1160,7 +1870,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   }, [subpageId]);
 
   const dynamicPages = customPages
-    .filter((p: any) => !ABOUT_PAGES.some(sp => sp.id === p.id))
+    .filter((p: any) => p.is_visible !== 0 && !ABOUT_PAGES.some(sp => sp.id === p.id))
     .map((p: any) => {
       // Determine the group for sidebar visibility
       let group = p.parent_menu || 'about';
@@ -1194,6 +1904,14 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
       };
     });
 
+  const isPageVisible = (pageId: string) => {
+    const dbPage = customPages.find(p => p.id === pageId);
+    if (dbPage) {
+      return dbPage.is_visible !== 0;
+    }
+    return true; // default to true
+  };
+
   const allPages = [...ABOUT_PAGES, ...dynamicPages];
   const meta = allPages.find((p) => p.id === subpageId) ?? allPages[0] ?? ABOUT_PAGES[0];
   const Icon = meta.icon;
@@ -1218,7 +1936,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
       isCustomHierarchy = true;
       // Get all child/sub-parent pages under this topParentId
       const lvl2Pages = customPages.filter(p => 
-        (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === topParentId
+        p.is_visible !== 0 && (p.menu_type === 'child' || p.menu_type === 'sub-parent') && p.parent_menu === topParentId
       );
       
       lvl2Pages.forEach(lvl2 => {
@@ -1227,13 +1945,13 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
           label: lvl2.title,
           icon: FileText,
           menu_type: lvl2.menu_type,
-          tabId: `custmenu__${topParentId}-${lvl2.id}`,
+          tabId: `custmenu__${topParentId}__${lvl2.id}`,
           isSubChild: false
         });
         
         if (lvl2.menu_type === 'sub-parent') {
           const lvl3Pages = customPages.filter(p => 
-            p.menu_type === 'sub-child' && p.parent_menu === lvl2.id
+            p.is_visible !== 0 && p.menu_type === 'sub-child' && p.parent_menu === lvl2.id
           );
           lvl3Pages.forEach(lvl3 => {
             customSidebarItems.push({
@@ -1241,7 +1959,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
               label: lvl3.title,
               icon: ChevronRight,
               menu_type: lvl3.menu_type,
-              tabId: `custmenu__${topParentId}-${lvl2.id}-${lvl3.id}`,
+              tabId: `custmenu__${topParentId}__${lvl2.id}__${lvl3.id}`,
               isSubChild: true
             });
           });
@@ -1251,11 +1969,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   }
 
   const hasSidebar = isCustomHierarchy ? (customSidebarItems.length > 0) : (meta.group !== 'none' && meta.group !== 'standalone');
-  const topParentPage = isCustomHierarchy ? customPages.find(p => p.id === topParentId) : null;
-
-
-
-  const isResults = subpageId === 'results';
+  const topParentPage = isCustomHierarchy ? customPages.find(p => p.id === topParentId) : null;  const isResults = subpageId === 'results';
   const isDraws = subpageId === 'draws';
   const isCourses = subpageId === 'courses';
   const isCirculars = subpageId === 'circulars';
@@ -1264,11 +1978,22 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   const isNcte = subpageId === 'ncte';
   const isAdmission = subpageId === 'admission';
   const isHods = subpageId === 'hods';
-
+  const isGallery = subpageId === 'gallery';
+  const isPlacements = subpageId === 'placements';
+  const isDonations = subpageId === 'donations';
+  const isContact = subpageId === 'contact';
+  const isCareers = subpageId === 'careers' || subpageId === 'jobs';
 
   useEffect(() => {
     setSelectedMember(null);
-    if (isResults || isDraws || isCourses || isCirculars || isCommittee || isDirector || isNcte || isHods || isAdmission) { setLoading(false); return; }
+    if (
+      isResults || isDraws || isCourses || isCirculars || isCommittee || 
+      isDirector || isNcte || isHods || isAdmission || isGallery || 
+      isPlacements || isDonations || isContact || isCareers
+    ) { 
+      setLoading(false); 
+      return; 
+    }
 
     setLoading(true);
     setError(null);
@@ -1379,7 +2104,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
                     );
                   })
                 ) : (
-                  allPages.filter(page => page.group === meta.group).map((page) => {
+                  allPages.filter(page => page.group === meta.group && isPageVisible(page.id)).map((page) => {
                     const PageIcon = page.icon;
                     const isActive = page.id === subpageId;
                     return (
@@ -1564,9 +2289,33 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
           {isAdmission && (
             <AdmissionPanel pageData={pageData} loading={loading} error={error} />
           )}
+          {/* ── GALLERY PANEL ── */}
+          {isGallery && (
+            <GalleryPage />
+          )}
 
-          {/* â”€â”€ OTHER PAGES: Custom Page Content â”€â”€ */}
-          {!isResults && !isDraws && !isCourses && !isCirculars && !isCommittee && !isDirector && !isNcte && !isAdmission && !isHods && (
+          {/* ── PLACEMENTS PANEL ── */}
+          {isPlacements && (
+            <PlacementPage />
+          )}
+
+          {/* ── DONATIONS PANEL ── */}
+          {isDonations && (
+            <DonationsPanel />
+          )}
+
+          {/* ── CONTACT PANEL ── */}
+          {isContact && (
+            <ContactPanel />
+          )}
+
+          {/* ── CAREERS PANEL ── */}
+          {isCareers && (
+            <CareersPanel />
+          )}
+
+          {/* ── OTHER PAGES: Custom Page Content ── */}
+          {!isResults && !isDraws && !isCourses && !isCirculars && !isCommittee && !isDirector && !isNcte && !isAdmission && !isHods && !isGallery && !isPlacements && !isDonations && !isContact && !isCareers && (
             <>
               {loading && (
                 <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 p-16 flex flex-col items-center justify-center gap-4">
@@ -1603,15 +2352,6 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
                   })()}
 
                   <div className="glass-card rounded-3xl border border-slate-200/50 dark:border-slate-800/40 overflow-hidden">
-                    <div className="flex items-center gap-3 px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                      <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${meta.color} flex items-center justify-center shadow-sm`}>
-                        <Icon className="w-4 h-4 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="font-bold text-sm text-slate-800 dark:text-white">Description &amp; Overview</h2>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wide">Official Content</p>
-                      </div>
-                    </div>
                     <div className="p-6 sm:p-8">
                       {pageData.content ? (
                         <>

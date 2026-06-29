@@ -32,7 +32,16 @@ app.get('/api/settings', async (req, res) => {
       top_header_links: '[]',
       show_main_header: 1,
       univ_tagline: 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
-      accreditation_logos: '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]'
+      accreditation_logos: '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]',
+      contact_intro: 'We, the Department of Sports & Physical Education, are always ready to provide information and answers to queries of students. We aim to resolve basic and common questions about courses and other related information.',
+      contact_address: 'Department of Sports & Physical Education,\nIravati Karve Social Science Complex, Behind SET Guest House,\nSavitribai Phule Pune University,\n(formerly University of Pune),\nPune - 411007, Maharashtra, INDIA.',
+      contact_timings: '10:30 am to 06:00 pm',
+      contact_timings_note: 'The University office has holidays on the 1st and the 3rd Saturday of every month.',
+      contact_phone1: '+91 - 20 - 25622428',
+      contact_phone2: '+91 - 20 - 25622429',
+      contact_email1: 'dpe@unipune.ac.in',
+      contact_email2: 'dpeadmin@unipune.ac.in',
+      contact_map_query: 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune'
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -44,7 +53,9 @@ app.post('/api/settings', async (req, res) => {
     univ_name, logo_url, theme_preset, primary_color, secondary_color,
     show_top_header, top_header_phone, top_header_email, top_header_bg_color, top_header_text_color,
     social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
-    top_header_links, show_main_header, univ_tagline, accreditation_logos
+    top_header_links, show_main_header, univ_tagline, accreditation_logos,
+    contact_intro, contact_address, contact_timings, contact_timings_note,
+    contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query
   } = req.body;
   try {
     await query.run(
@@ -52,9 +63,11 @@ app.post('/api/settings', async (req, res) => {
         id, univ_name, logo_url, theme_preset, primary_color, secondary_color,
         show_top_header, top_header_phone, top_header_email, top_header_bg_color, top_header_text_color,
         social_facebook, social_twitter, social_linkedin, social_instagram, social_youtube,
-        top_header_links, show_main_header, univ_tagline, accreditation_logos
+        top_header_links, show_main_header, univ_tagline, accreditation_logos,
+        contact_intro, contact_address, contact_timings, contact_timings_note,
+        contact_phone1, contact_phone2, contact_email1, contact_email2, contact_map_query
       )
-      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         univ_name, logo_url, theme_preset, primary_color, secondary_color,
         show_top_header ?? 1, top_header_phone ?? '+953 012 3654 896', top_header_email ?? 'support@apex.edu',
@@ -62,7 +75,9 @@ app.post('/api/settings', async (req, res) => {
         social_facebook ?? '#', social_twitter ?? '#', social_linkedin ?? '#', social_instagram ?? '#', social_youtube ?? '#',
         top_header_links ?? '[]', show_main_header ?? 1,
         univ_tagline ?? 'Autonomous Institution | Approved by AICTE | Permanently Affiliated',
-        accreditation_logos ?? '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]'
+        accreditation_logos ?? '[{"id":"naac","title":"NAAC A++","subtitle":"Accredited Grade","image_url":"/naac.png"},{"id":"nba","title":"NBA","subtitle":"Accredited Tier-1","image_url":"/nba.png"},{"id":"nirf","title":"NIRF","subtitle":"Top Engineering","image_url":"/nirf.png"},{"id":"ugc","title":"UGC","subtitle":"Autonomous","image_url":"/ugc.png"}]',
+        contact_intro ?? '', contact_address ?? '', contact_timings ?? '', contact_timings_note ?? '',
+        contact_phone1 ?? '', contact_phone2 ?? '', contact_email1 ?? '', contact_email2 ?? '', contact_map_query ?? ''
       ]
     );
     const updated = await query.get('SELECT * FROM settings WHERE id = 1');
