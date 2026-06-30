@@ -155,12 +155,19 @@ if (connectionString) {
     prepare(sql, callback) {
       const pgSql = convertSql(sql);
       const stmt = {
-        run(params, cb) {
-          let actualParams = params; let actualCallback = cb;
-          if (typeof params === 'function') { actualCallback = params; actualParams = []; }
+        run(...args) {
+          let actualParams = args;
+          let actualCallback = null;
+          if (args.length > 0 && typeof args[args.length - 1] === 'function') {
+            actualCallback = args[args.length - 1];
+            actualParams = args.slice(0, args.length - 1);
+          }
+          if (actualParams.length === 1 && Array.isArray(actualParams[0])) {
+            actualParams = actualParams[0];
+          }
           pool.query(pgSql, actualParams)
             .then(() => { if (actualCallback) actualCallback(null); })
-            .catch(err => { console.error('stmt.run error:', err.message); if (actualCallback) actualCallback(err); });
+            .catch(err => { console.error('stmt.run error:', err.message, 'SQL:', pgSql); if (actualCallback) actualCallback(err); });
         },
         finalize(cb) {
           if (cb) cb(null);
