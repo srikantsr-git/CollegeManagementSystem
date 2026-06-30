@@ -1738,6 +1738,53 @@ app.delete('/api/placement/companies/:id', async (req, res) => {
   }
 });
 
+
+// --- RESULTS / DRAWS API ---
+app.get('/api/results', async (req, res) => {
+  try {
+    const rows = await query.all('SELECT * FROM results ORDER BY date DESC, id DESC');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/results', async (req, res) => {
+  const { title, description, date, sport, category, file_url, file_name, published } = req.body;
+  try {
+    const result = await query.run(
+      `INSERT INTO results (title, description, date, sport, category, file_url, file_name, published)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [title, description || '', date, sport || 'General', category || '', file_url || null, file_name || null, published !== undefined ? published : 1]
+    );
+    res.json({ success: true, id: result.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/results/:id', async (req, res) => {
+  const { title, description, date, sport, category, file_url, file_name, published } = req.body;
+  try {
+    await query.run(
+      `UPDATE results SET title=?, description=?, date=?, sport=?, category=?, file_url=?, file_name=?, published=? WHERE id=?`,
+      [title, description || '', date, sport || 'General', category || '', file_url || null, file_name || null, published !== undefined ? published : 1, req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/results/:id', async (req, res) => {
+  try {
+    await query.run('DELETE FROM results WHERE id=?', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Server listener
 if (require.main === module) {
   app.listen(PORT, () => {

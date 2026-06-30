@@ -577,6 +577,27 @@ INSERT INTO slider_slides (id, sort_order, title, subtitle, description, btn_tex
 (3, 3, 'State-of-the-Art Facilities', 'Train Like a Pro', 'Explore our top-tier tracks, multi-purpose gyms, and expert-led training camps.', 'Our Facilities', '/about/facilities', 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=1600&auto=format&fit=crop&q=80', 0.5, 1)
 ON CONFLICT (id) DO NOTHING;
 
+-- Results / Draws table
+CREATE TABLE IF NOT EXISTS results (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  description TEXT,
+  date TEXT NOT NULL,
+  sport TEXT DEFAULT 'General',
+  category TEXT DEFAULT '',
+  file_url TEXT,
+  file_name TEXT,
+  published INTEGER DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed Results
+INSERT INTO results (id, title, description, date, sport, category, file_url, file_name, published) VALUES
+(1, 'Football Knockout Bracket 2026 – Quarter Finals', 'Quarter-final match schedules and venue allocations for the city-zone football championship. All matches at Shivajinagar Ground.', '2026-04-05', 'Football', 'Draw', NULL, NULL, 1),
+(2, 'Inter-Collegiate Cricket Tournament 2025-26 – Final Results', 'St. Xavier''s College won the zonal cricket championship defeating Fergusson College 187-164. Player of the Match: Rohit Sharma (St. Xavier''s).', '2026-01-15', 'Cricket', 'Final', NULL, NULL, 1),
+(3, 'Athletics Zone Selection 2025-26 – Draw & Fixtures', 'District-level draw for the 100m, 200m, 400m sprints and relay events has been published. Report at Gate 3 by 7:30 AM on match day.', '2026-03-10', 'Athletics', 'Draw', NULL, NULL, 1)
+ON CONFLICT (id) DO NOTHING;
+
 -- Seed Admissions
 INSERT INTO admissions (id, course_name, course_subtitle, intro_text, eligibility, age_limit, intake_capacity, duration, timing, medium, fees_indian, fees_international, batch_1_period, batch_1_admission_notice, batch_2_period, batch_2_admission_notice, additional_notes, sort_order) VALUES
 (1, 'Certificate / Foundation Course in Yoga Education (FCYE)', 'Foundation Course in Yoga Education', 'The Department is offering a Three-Month Foundation Course in Yoga Education (formerly known as Certificate Course in Yoga Education) twice a year.', 'Minimum 12th Std. or Equivalent Exam Pass', '18 to 60 years (Candidates should be medically fit and sound)', '50 students', 'Three (03) months', '03:00 pm to 06:00 pm (Monday to Friday, except University holidays)', 'English & Marathi (Instruction & Examination)', 'Tuition Fee Rs. 20,000/- + Other Fees as per University Rules', 'Tuition Fee Rs. 60,000/- + Other Fees as per University Rules. International Students should apply through the International Centre, SPPU.', 'August to November', 'Admission process starts in the first week of July', 'February to May', 'Admission process starts in the first week of January', 'For further details, contact the Department of Physical Education office directly during working hours.', 1)
@@ -605,3 +626,4 @@ SELECT setval(pg_get_serial_sequence('placement_companies', 'id'), COALESCE(MAX(
 SELECT setval(pg_get_serial_sequence('spotlights', 'id'), COALESCE(MAX(id), 1)) FROM spotlights;
 SELECT setval(pg_get_serial_sequence('slider_slides', 'id'), COALESCE(MAX(id), 1)) FROM slider_slides;
 SELECT setval(pg_get_serial_sequence('admissions', 'id'), COALESCE(MAX(id), 1)) FROM admissions;
+SELECT setval(pg_get_serial_sequence('results', 'id'), COALESCE(MAX(id), 1)) FROM results;

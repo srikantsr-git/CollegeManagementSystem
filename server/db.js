@@ -149,7 +149,8 @@ if (connectionString) {
     placement_companies: 'id',
     spotlights: 'id',
     slider_slides: 'id',
-    admissions: 'id'
+    admissions: 'id',
+    results: 'id'
   };
 
   function convertSql(sql) {
