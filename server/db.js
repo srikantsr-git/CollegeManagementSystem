@@ -151,6 +151,23 @@ if (connectionString) {
       pool.query(pgSql)
         .then(() => { if (callback) callback(null); })
         .catch(err => { console.error('db.exec error:', err.message); if (callback) callback(err); });
+    },
+    prepare(sql, callback) {
+      const pgSql = convertSql(sql);
+      const stmt = {
+        run(params, cb) {
+          let actualParams = params; let actualCallback = cb;
+          if (typeof params === 'function') { actualCallback = params; actualParams = []; }
+          pool.query(pgSql, actualParams)
+            .then(() => { if (actualCallback) actualCallback(null); })
+            .catch(err => { console.error('stmt.run error:', err.message); if (actualCallback) actualCallback(err); });
+        },
+        finalize(cb) {
+          if (cb) cb(null);
+        }
+      };
+      if (callback) callback(null, stmt);
+      return stmt;
     }
   };
 
