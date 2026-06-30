@@ -1709,8 +1709,13 @@ app.delete('/api/placement/companies/:id', async (req, res) => {
 });
 
 // Server listener
-app.listen(PORT, () => {
-  console.log(`Server is running dynamically on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running dynamically on port ${PORT}`);
+  });
+}
+
+module.exports = app;
+
 
 
