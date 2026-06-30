@@ -80,8 +80,8 @@ const PlacementPage: React.FC = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:5001/api/placement/content').then(r => r.ok ? r.json() : null),
-      fetch('http://localhost:5001/api/placement/companies').then(r => r.ok ? r.json() : []),
+      fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/content`).then(r => r.ok ? r.json() : null),
+      fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies`).then(r => r.ok ? r.json() : []),
     ]).then(([c, comp]) => {
       if (c) setContent(c);
       if (comp) setCompanies(comp);

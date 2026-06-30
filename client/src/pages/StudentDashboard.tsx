@@ -40,7 +40,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/student/${currentUser.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/student/${currentUser.id}`);
       const data = await res.json();
       if (res.ok) {
         setProfile(data);
@@ -65,17 +65,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
     await fetchProfile();
     try {
       // Mentorship connections
-      const mRes = await fetch(`http://localhost:5001/api/mentorship?userId=${currentUser.id}&role=student`);
+      const mRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship?userId=${currentUser.id}&role=student`);
       const mData = await mRes.json();
       if (mRes.ok) setMentorships(mData);
 
       // Jobs applied for
-      const appRes = await fetch(`http://localhost:5001/api/jobs/applied/${currentUser.id}`);
+      const appRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/applied/${currentUser.id}`);
       const appData = await appRes.json();
       if (appRes.ok) setAppliedJobs(appData);
 
       // Available jobs
-      const jobsRes = await fetch('http://localhost:5001/api/jobs');
+      const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
       const jobsData = await jobsRes.json();
       if (jobsRes.ok) setAvailableJobs(jobsData);
 
@@ -93,7 +93,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:5001/api/student/${currentUser.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/student/${currentUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -121,7 +121,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
   // Job Apply
   const handleApplyJob = async (jobId: number) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/jobs/${jobId}/apply`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/${jobId}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -133,7 +133,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({ currentUser,
       if (res.ok) {
         alert("Application successfully submitted!");
         // Refresh applied jobs list
-        const appRes = await fetch(`http://localhost:5001/api/jobs/applied/${currentUser.id}`);
+        const appRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/applied/${currentUser.id}`);
         const appData = await appRes.json();
         setAppliedJobs(appData);
       } else {

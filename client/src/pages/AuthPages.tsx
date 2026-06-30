@@ -64,7 +64,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
     e.preventDefault();
     setErrorMsg('');
     try {
-      const res = await fetch('http://localhost:5001/api/auth/login', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, role: selectedRole })
@@ -86,7 +86,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
     e.preventDefault();
     setErrorMsg('');
     try {
-      const res = await fetch('http://localhost:5001/api/auth/verify-otp', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: otpValue })
@@ -131,7 +131,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
     };
 
     try {
-      const res = await fetch('http://localhost:5001/api/auth/register', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

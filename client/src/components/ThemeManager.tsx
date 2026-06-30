@@ -76,7 +76,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Fetch settings from API
   useEffect(() => {
-    fetch('http://localhost:5001/api/settings')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/settings`)
       .then(res => {
         if (!res.ok) throw new Error('Failed to fetch settings');
         return res.json();
@@ -143,7 +143,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const updateSettings = async (newSettings: Settings) => {
     try {
-      const res = await fetch('http://localhost:5001/api/settings', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/settings`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newSettings)

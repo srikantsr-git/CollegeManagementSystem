@@ -427,7 +427,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
       return;
     }
     setPageLoading(true);
-    fetch(`http://localhost:5001/api/custom-pages/${selectedPageId}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${selectedPageId}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) {
@@ -480,7 +480,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
     setPageSaved(false);
     if (!selectedPageId) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/custom-pages/${selectedPageId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${selectedPageId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -514,7 +514,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
     const slugRegex = /^[a-zA-Z0-9-_]+$/;
     if (!slugRegex.test(newPageId)) { alert("Page ID/Slug can only contain alphanumeric characters, hyphens, and underscores."); return; }
     try {
-      const res = await fetch('http://localhost:5001/api/custom-pages', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -557,7 +557,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
       message: `Delete custom page "${pageId}"? If it's a dropdown parent, all its child subpages will also be deleted.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/custom-pages/${pageId}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${pageId}`, { method: 'DELETE' });
           if (res.ok) { await onRefresh(); setSelectedPageId(''); }
           else { alert("Failed to delete page."); }
         } catch { alert("Connection failed."); }
@@ -569,7 +569,7 @@ const StaticPagesManager: React.FC<StaticPagesManagerProps> = ({
   const handleToggleVisibility = async (page: any) => {
     const nextVisibility = page.is_visible !== 0 ? 0 : 1;
     try {
-      const res = await fetch(`http://localhost:5001/api/custom-pages/${page.id}/visibility`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${page.id}/visibility`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_visible: nextVisibility })
@@ -1616,104 +1616,104 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     setLoading(true);
     try {
       // Pending accounts
-      const pRes = await fetch('http://localhost:5001/api/admin/pending-users');
+      const pRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/pending-users`);
       const pData = await pRes.json();
       if (pRes.ok) setPendingUsers(pData);
 
       // Donations list
-      const dRes = await fetch('http://localhost:5001/api/donations');
+      const dRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/donations`);
       const dData = await dRes.json();
       if (dRes.ok) setAllDonations(dData);
 
       // News list
-      const nRes = await fetch('http://localhost:5001/api/news');
+      const nRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`);
       const nData = await nRes.json();
       if (nRes.ok) setAllNews(nData);
 
       // Custom pages list
-      const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+      const cpRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`);
       const cpData = await cpRes.json();
       if (cpRes.ok) setAllAboutPages(cpData);
 
       // Events list
-      const eRes = await fetch('http://localhost:5001/api/events');
+      const eRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`);
       const eData = await eRes.ok ? await eRes.json() : [];
       if (eRes.ok) setAllEvents(eData);
 
       // Hero slider list
-      const slRes = await fetch('http://localhost:5001/api/slider');
+      const slRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/slider`);
       const slData = slRes.ok ? await slRes.json() : [];
       setAllSlides(slData);
 
       // Results / Draws list
-      const rRes = await fetch('http://localhost:5001/api/results');
+      const rRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/results`);
       const rData = rRes.ok ? await rRes.json() : [];
       setAllResults(rData);
 
       // Circulars list
-      const circRes = await fetch('http://localhost:5001/api/circulars');
+      const circRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars`);
       const circData = circRes.ok ? await circRes.json() : [];
       setAllCirculars(circData);
 
       // NCTE disclosures list
-      const ncteRes = await fetch('http://localhost:5001/api/ncte-disclosures');
+      const ncteRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures`);
       const ncteData = ncteRes.ok ? await ncteRes.json() : [];
       setAllNcte(ncteData);
 
       // Committee members
-      const cmRes = await fetch('http://localhost:5001/api/committee');
+      const cmRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/committee`);
       const cmData = cmRes.ok ? await cmRes.json() : [];
       setAllCommittee(cmData);
 
       // Directors
-      const dirRes = await fetch('http://localhost:5001/api/directors');
+      const dirRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/directors`);
       const dirData = dirRes.ok ? await dirRes.json() : [];
       setAllDirectors(dirData);
 
       // HODs / Directors Desk
-      const hodsRes = await fetch('http://localhost:5001/api/hods');
+      const hodsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hods`);
       const hodsData = hodsRes.ok ? await hodsRes.json() : [];
       setAllHods(hodsData);
 
       // Courses list
-      const cRes = await fetch('http://localhost:5001/api/courses');
+      const cRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
       const cData = cRes.ok ? await cRes.json() : [];
       setAllCourses(cData);
 
       // Admissions list
-      const admRes = await fetch('http://localhost:5001/api/admissions');
+      const admRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admissions`);
       const admData = admRes.ok ? await admRes.json() : [];
       setAllAdmissions(admData);
 
       // Admission Files (Documents) list
-      const afRes = await fetch('http://localhost:5001/api/admission-files');
+      const afRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admission-files`);
       const afData = afRes.ok ? await afRes.json() : [];
       if (afRes.ok) setAllAdmFiles(afData);
 
       // Jobs list
-      const jobsRes = await fetch('http://localhost:5001/api/jobs');
+      const jobsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
       const jobsData = jobsRes.ok ? await jobsRes.json() : [];
       if (jobsRes.ok) setAllJobs(jobsData);
 
       // Job applications list
-      const appsRes = await fetch('http://localhost:5001/api/jobs/applications');
+      const appsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/applications`);
       const appsData = appsRes.ok ? await appsRes.json() : [];
       setAllApplications(appsData);
 
       // Spotlights list
-      const spotsRes = await fetch('http://localhost:5001/api/spotlights');
+      const spotsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/spotlights`);
       const spotsData = spotsRes.ok ? await spotsRes.json() : [];
       setAllSpotlights(spotsData);
 
       // Gallery list
-      const galRes = await fetch('http://localhost:5001/api/gallery');
+      const galRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/gallery`);
       const galData = galRes.ok ? await galRes.json() : [];
       setAllGallery(galData);
 
       // Placement data
-      const plRes = await fetch('http://localhost:5001/api/placement/content');
+      const plRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/content`);
       if (plRes.ok) { const plData = await plRes.json(); setPlacementContent(plData); }
-      const compRes = await fetch('http://localhost:5001/api/placement/companies');
+      const compRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies`);
       if (compRes.ok) { const compData = await compRes.json(); setAllCompanies(compData); }
 
     } catch (e) {
@@ -1730,7 +1730,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handlePlacementContentSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5001/api/placement/content', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/content`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(placementContent)
@@ -1757,8 +1757,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     if (!companyForm.name) { alert('Company name is required.'); return; }
     try {
       const url = companyEditId
-        ? `http://localhost:5001/api/placement/companies/${companyEditId}`
-        : 'http://localhost:5001/api/placement/companies';
+        ? `${import.meta.env.VITE_API_URL || ''}/api/placement/companies/${companyEditId}`
+        : `${import.meta.env.VITE_API_URL || ''}/api/placement/companies`;
       const method = companyEditId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method, headers: { 'Content-Type': 'application/json' },
@@ -1769,7 +1769,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setTimeout(() => setCompanySaved(false), 3000);
         setCompanyEditId(null);
         setCompanyForm({ name: '', logo_url: '', website: '', sort_order: 0 });
-        const compRes = await fetch('http://localhost:5001/api/placement/companies');
+        const compRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies`);
         if (compRes.ok) setAllCompanies(await compRes.json());
       } else { alert('Failed to save company.'); }
     } catch { alert('Connection failed.'); }
@@ -1787,9 +1787,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       isOpen: true,
       message: 'Delete this recruiter company? This cannot be undone.',
       onConfirm: async () => {
-        const res = await fetch(`http://localhost:5001/api/placement/companies/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies/${id}`, { method: 'DELETE' });
         if (res.ok) {
-          const compRes = await fetch('http://localhost:5001/api/placement/companies');
+          const compRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies`);
           if (compRes.ok) setAllCompanies(await compRes.json());
           if (companyEditId === id) { setCompanyEditId(null); setCompanyForm({ name: '', logo_url: '', website: '', sort_order: 0 }); }
         } else { alert('Failed to delete company.'); }
@@ -1817,7 +1817,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     if (!galleryForm.title || !galleryForm.image_url) { alert('Title and image are required.'); return; }
     try {
-      const url = galleryEditId ? `http://localhost:5001/api/gallery/${galleryEditId}` : 'http://localhost:5001/api/gallery';
+      const url = galleryEditId ? `${import.meta.env.VITE_API_URL || ''}/api/gallery/${galleryEditId}` : `${import.meta.env.VITE_API_URL || ''}/api/gallery`;
       const method = galleryEditId ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -1828,7 +1828,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setGallerySaved(true);
         setTimeout(() => setGallerySaved(false), 3000);
         resetGalleryForm();
-        const galRes = await fetch('http://localhost:5001/api/gallery');
+        const galRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/gallery`);
         const galData = galRes.ok ? await galRes.json() : [];
         setAllGallery(galData);
       } else {
@@ -1857,9 +1857,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       isOpen: true,
       message: 'Are you sure you want to delete this photo? This action cannot be undone.',
       onConfirm: async () => {
-        const res = await fetch(`http://localhost:5001/api/gallery/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/gallery/${id}`, { method: 'DELETE' });
         if (res.ok) {
-          const galRes = await fetch('http://localhost:5001/api/gallery');
+          const galRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/gallery`);
           const galData = galRes.ok ? await galRes.json() : [];
           setAllGallery(galData);
           if (galleryEditId === id) resetGalleryForm();
@@ -1872,7 +1872,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   // Fetch page detail on selected ID change
   useEffect(() => {
     if (selectedAboutPageId) {
-      fetch(`http://localhost:5001/api/custom-pages/${selectedAboutPageId}`)
+      fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${selectedAboutPageId}`)
         .then(res => res.json())
         .then(data => {
           if (data) {
@@ -1942,8 +1942,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setCmSaved(false);
     const url = committeeEditId
-      ? `http://localhost:5001/api/committee/${committeeEditId}`
-      : 'http://localhost:5001/api/committee';
+      ? `${import.meta.env.VITE_API_URL || ''}/api/committee/${committeeEditId}`
+      : `${import.meta.env.VITE_API_URL || ''}/api/committee`;
     const method = committeeEditId ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -1967,7 +1967,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this committee member?',
       onConfirm: async () => {
         try {
-          await fetch(`http://localhost:5001/api/committee/${id}`, { method: 'DELETE' });
+          await fetch(`${import.meta.env.VITE_API_URL || ''}/api/committee/${id}`, { method: 'DELETE' });
           fetchData();
         } catch (e) {
           alert('Failed to delete committee member.');
@@ -1997,8 +1997,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setDirSaved(false);
     const url = directorEditId
-      ? `http://localhost:5001/api/directors/${directorEditId}`
-      : 'http://localhost:5001/api/directors';
+      ? `${import.meta.env.VITE_API_URL || ''}/api/directors/${directorEditId}`
+      : `${import.meta.env.VITE_API_URL || ''}/api/directors`;
     const method = directorEditId ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -2022,7 +2022,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this physical education director?',
       onConfirm: async () => {
         try {
-          await fetch(`http://localhost:5001/api/directors/${id}`, { method: 'DELETE' });
+          await fetch(`${import.meta.env.VITE_API_URL || ''}/api/directors/${id}`, { method: 'DELETE' });
           fetchData();
         } catch (e) {
           alert('Failed to delete director.');
@@ -2051,7 +2051,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handleHodSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setHodSaved(false);
-    const url = hodEditId ? "http://localhost:5001/api/hods/" + hodEditId : "http://localhost:5001/api/hods";
+    const url = hodEditId ? `${import.meta.env.VITE_API_URL || ''}/api/hods/` + hodEditId : `${import.meta.env.VITE_API_URL || ''}/api/hods`;
     const method = hodEditId ? "PUT" : "POST";
     try {
       const res = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(hodForm) });
@@ -2059,7 +2059,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setHodSaved(true);
         setHodEditId(null);
         setHodForm({ name: "", designation: "", photo_url: "", college_name: "", college_address: "", mobile_number: "", email: "", message: "", sort_order: 0, profile_pdf_url: null, profile_pdf_name: null });
-        fetch("http://localhost:5001/api/hods").then(r => r.ok ? r.json() : []).then(data => setAllHods(data));
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hods`).then(r => r.ok ? r.json() : []).then(data => setAllHods(data));
         setTimeout(() => setHodSaved(false), 3000);
       }
     } catch (e) { alert("Failed to save HOD entry."); }
@@ -2068,8 +2068,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handleHodDelete = (id: number) => {
     setConfirmDialog({ isOpen: true, message: "Are you sure you want to delete this HOD entry?", onConfirm: async () => {
       try {
-        await fetch("http://localhost:5001/api/hods/" + id, { method: "DELETE" });
-        fetch("http://localhost:5001/api/hods").then(r => r.ok ? r.json() : []).then(data => setAllHods(data));
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/api/hods/` + id, { method: "DELETE" });
+        fetch(`${import.meta.env.VITE_API_URL || ''}/api/hods`).then(r => r.ok ? r.json() : []).then(data => setAllHods(data));
       } catch (e) { alert("Failed to delete HOD entry."); }
       setConfirmDialog(prev => ({ ...prev, isOpen: false }));
     }});
@@ -2084,7 +2084,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handleVerifyUser = async (userId: number, status: 'approved' | 'rejected') => {
 
     try {
-      const res = await fetch('http://localhost:5001/api/admin/verify-user', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admin/verify-user`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, status })
@@ -2104,7 +2104,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setEventCreated(false);
     try {
-      const res = await fetch('http://localhost:5001/api/events', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2128,7 +2128,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setEvtCap('');
         setEvtImg('');
         // Refresh events list
-        const refreshedRes = await fetch('http://localhost:5001/api/events');
+        const refreshedRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`);
         const refreshedData = await refreshedRes.json();
         if (refreshedRes.ok) setAllEvents(refreshedData);
         setTimeout(() => setEventCreated(false), 3500);
@@ -2144,13 +2144,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this event?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/events/${id}`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events/${id}`, {
             method: 'DELETE'
           });
           if (res.ok) {
             alert("Event deleted successfully.");
             // Refresh events list
-            const refreshedRes = await fetch('http://localhost:5001/api/events');
+            const refreshedRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`);
             const refreshedData = await refreshedRes.json();
             if (refreshedRes.ok) setAllEvents(refreshedData);
           }
@@ -2166,7 +2166,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setNewsCreated(false);
     try {
-      const res = await fetch('http://localhost:5001/api/news', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2187,7 +2187,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setNewsFileUrl(null);
         setNewsFileName(null);
         // Refresh news list
-        const refreshedRes = await fetch('http://localhost:5001/api/news');
+        const refreshedRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`);
         const refreshedData = await refreshedRes.json();
         if (refreshedRes.ok) setAllNews(refreshedData);
         setTimeout(() => setNewsCreated(false), 3500);
@@ -2203,13 +2203,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this notice?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/news/${id}`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/news/${id}`, {
             method: 'DELETE'
           });
           if (res.ok) {
             alert("Notice deleted successfully.");
             // Refresh news list
-            const refreshedRes = await fetch('http://localhost:5001/api/news');
+            const refreshedRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`);
             const refreshedData = await refreshedRes.json();
             if (refreshedRes.ok) setAllNews(refreshedData);
           }
@@ -2237,7 +2237,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setAboutPageSaved(false);
     try {
-      const res = await fetch(`http://localhost:5001/api/custom-pages/${selectedAboutPageId}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${selectedAboutPageId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2252,7 +2252,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       if (res.ok) {
         setAboutPageSaved(true);
         // Refresh pages list
-        const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+        const cpRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`);
         const cpData = await cpRes.json();
         if (cpRes.ok) setAllAboutPages(cpData);
         setTimeout(() => setAboutPageSaved(false), 3000);
@@ -2289,7 +2289,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     }
 
     try {
-      const res = await fetch('http://localhost:5001/api/custom-pages', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2315,7 +2315,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setIsCreatingPage(false);
 
         // Refresh dynamic page listing
-        const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+        const cpRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`);
         const cpData = await cpRes.json();
         if (cpRes.ok) {
           setAllAboutPages(cpData);
@@ -2341,12 +2341,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: `Are you sure you want to delete the custom page "${pageId}"? This action cannot be undone.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/custom-pages/${pageId}`, {
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${pageId}`, {
             method: 'DELETE'
           });
           if (res.ok) {
             // Refresh pages
-            const cpRes = await fetch('http://localhost:5001/api/custom-pages');
+            const cpRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages`);
             const cpData = await cpRes.json();
             if (cpRes.ok) {
               setAllAboutPages(cpData);
@@ -2387,7 +2387,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     setSlSaved(false);
     try {
       const isEdit = slideEditId !== null;
-      const url = isEdit ? `http://localhost:5001/api/slider/${slideEditId}` : 'http://localhost:5001/api/slider';
+      const url = isEdit ? `${import.meta.env.VITE_API_URL || ''}/api/slider/${slideEditId}` : `${import.meta.env.VITE_API_URL || ''}/api/slider`;
       const method = isEdit ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
@@ -2397,7 +2397,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       if (res.ok) {
         setSlSaved(true);
         resetSliderForm();
-        const refreshed = await fetch('http://localhost:5001/api/slider');
+        const refreshed = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/slider`);
         const refreshedData = refreshed.ok ? await refreshed.json() : [];
         setAllSlides(refreshedData);
         setTimeout(() => setSlSaved(false), 3000);
@@ -2415,9 +2415,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this slide?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/slider/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/slider/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const refreshed = await fetch('http://localhost:5001/api/slider');
+            const refreshed = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/slider`);
             const refreshedData = refreshed.ok ? await refreshed.json() : [];
             setAllSlides(refreshedData);
           }
@@ -2454,7 +2454,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   };
 
   const refreshResults = async () => {
-    const rRes = await fetch('http://localhost:5001/api/results');
+    const rRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/results`);
     const rData = rRes.ok ? await rRes.json() : [];
     setAllResults(rData);
   };
@@ -2463,7 +2463,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setResCreated(false);
     try {
-      const res = await fetch('http://localhost:5001/api/results', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2493,7 +2493,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this result entry?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/results/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/results/${id}`, { method: 'DELETE' });
           if (res.ok) await refreshResults();
         } catch {
           alert('Failed to delete result.');
@@ -2507,7 +2507,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handleSaveCourse = async (e: React.FormEvent) => {
     e.preventDefault();
     setCoursesSaved(false);
-    const url = courseEditId ? `http://localhost:5001/api/courses/${courseEditId}` : 'http://localhost:5001/api/courses';
+    const url = courseEditId ? `${import.meta.env.VITE_API_URL || ''}/api/courses/${courseEditId}` : `${import.meta.env.VITE_API_URL || ''}/api/courses`;
     const method = courseEditId ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -2529,7 +2529,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setCourseSortOrder('0');
         setCourseEditId(null);
         // Refresh list
-        const refreshRes = await fetch('http://localhost:5001/api/courses');
+        const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
         if (refreshRes.ok) setAllCourses(await refreshRes.json());
         setTimeout(() => setCoursesSaved(false), 3000);
       } else {
@@ -2555,9 +2555,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this course?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/courses/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const refreshRes = await fetch('http://localhost:5001/api/courses');
+            const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`);
             if (refreshRes.ok) setAllCourses(await refreshRes.json());
           }
         } catch {
@@ -2573,8 +2573,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setAdmissionSaved(false);
     const url = admissionEditId
-      ? `http://localhost:5001/api/admissions/${admissionEditId}`
-      : 'http://localhost:5001/api/admissions';
+      ? `${import.meta.env.VITE_API_URL || ''}/api/admissions/${admissionEditId}`
+      : `${import.meta.env.VITE_API_URL || ''}/api/admissions`;
     const method = admissionEditId ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -2593,7 +2593,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setAdmissionSaved(true);
         setAdmissionEditId(null);
         setAdmForm({ title: '', content: '', file_label: '', file_url: null, file_name: null, sort_order: 0 });
-        const refreshRes = await fetch('http://localhost:5001/api/admissions');
+        const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admissions`);
         if (refreshRes.ok) setAllAdmissions(await refreshRes.json());
         setTimeout(() => setAdmissionSaved(false), 3000);
       } else {
@@ -2632,9 +2632,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this admission entry?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/admissions/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admissions/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const refreshRes = await fetch('http://localhost:5001/api/admissions');
+            const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admissions`);
             if (refreshRes.ok) setAllAdmissions(await refreshRes.json());
           }
         } catch {
@@ -2650,8 +2650,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setAdmFileSaved(false);
     const url = fileForm.id
-      ? `http://localhost:5001/api/admission-files/${fileForm.id}`
-      : 'http://localhost:5001/api/admission-files';
+      ? `${import.meta.env.VITE_API_URL || ''}/api/admission-files/${fileForm.id}`
+      : `${import.meta.env.VITE_API_URL || ''}/api/admission-files`;
     const method = fileForm.id ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -2667,7 +2667,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       if (res.ok) {
         setAdmFileSaved(true);
         setFileForm({ id: null, title: '', file_url: null, file_name: null, sort_order: 0 });
-        const refreshRes = await fetch('http://localhost:5001/api/admission-files');
+        const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admission-files`);
         if (refreshRes.ok) setAllAdmFiles(await refreshRes.json());
         setTimeout(() => setAdmFileSaved(false), 3000);
       } else {
@@ -2688,9 +2688,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this document?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/admission-files/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admission-files/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const refreshRes = await fetch('http://localhost:5001/api/admission-files');
+            const refreshRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/admission-files`);
             if (refreshRes.ok) setAllAdmFiles(await refreshRes.json());
           }
         } catch {
@@ -2706,7 +2706,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setJobPostedMsg(false);
     try {
-      const res = await fetch('http://localhost:5001/api/jobs', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2732,7 +2732,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setJobSalary('');
         
         // Refresh Job List
-        const jRes = await fetch('http://localhost:5001/api/jobs');
+        const jRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
         const jData = jRes.ok ? await jRes.json() : [];
         setAllJobs(jData);
 
@@ -2749,10 +2749,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this job posting?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/jobs/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/${id}`, { method: 'DELETE' });
           if (res.ok) {
             // Refresh Job List
-            const jRes = await fetch('http://localhost:5001/api/jobs');
+            const jRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
             const jData = jRes.ok ? await jRes.json() : [];
             setAllJobs(jData);
           }
@@ -2768,7 +2768,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   const handleSpotlightSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSpotSaved(false);
-    const url = spotEditId ? `http://localhost:5001/api/spotlights/${spotEditId}` : 'http://localhost:5001/api/spotlights';
+    const url = spotEditId ? `${import.meta.env.VITE_API_URL || ''}/api/spotlights/${spotEditId}` : `${import.meta.env.VITE_API_URL || ''}/api/spotlights`;
     const method = spotEditId ? 'PUT' : 'POST';
     try {
       const res = await fetch(url, {
@@ -2782,7 +2782,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setSpotForm({ name: '', role: '', grad: '', photo: '', text: '' });
         
         // Refresh Spotlights
-        const rRes = await fetch('http://localhost:5001/api/spotlights');
+        const rRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/spotlights`);
         const rData = rRes.ok ? await rRes.json() : [];
         setAllSpotlights(rData);
 
@@ -2801,10 +2801,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this Alumni Spotlight entry?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/spotlights/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/spotlights/${id}`, { method: 'DELETE' });
           if (res.ok) {
             // Refresh Spotlights
-            const rRes = await fetch('http://localhost:5001/api/spotlights');
+            const rRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/spotlights`);
             const rData = rRes.ok ? await rRes.json() : [];
             setAllSpotlights(rData);
           }
@@ -2830,14 +2830,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
   // ── Job Application Moderation Handlers ──────────────────────────────────
   const handleUpdateApplicationStatus = async (appId: number, status: 'applied' | 'reviewing' | 'shortlisted' | 'rejected') => {
     try {
-      const res = await fetch(`http://localhost:5001/api/jobs/applications/${appId}/status`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/applications/${appId}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status })
       });
       if (res.ok) {
         // Refresh applications list
-        const appsRes = await fetch('http://localhost:5001/api/jobs/applications');
+        const appsRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs/applications`);
         const appsData = appsRes.ok ? await appsRes.json() : [];
         setAllApplications(appsData);
       } else {
@@ -2865,7 +2865,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setCircularCreated(false);
     try {
-      const res = await fetch('http://localhost:5001/api/circulars', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2881,7 +2881,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setCircularTitle(''); setCircularDesc(''); setCircularDate('');
         setCircularFileUrl(null); setCircularFileName(null);
         // Refresh circulars list
-        const circRes = await fetch('http://localhost:5001/api/circulars');
+        const circRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars`);
         const circData = circRes.ok ? await circRes.json() : [];
         setAllCirculars(circData);
         setTimeout(() => setCircularCreated(false), 3500);
@@ -2899,9 +2899,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this circular?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/circulars/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const circRes = await fetch('http://localhost:5001/api/circulars');
+            const circRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars`);
             const circData = circRes.ok ? await circRes.json() : [];
             setAllCirculars(circData);
           }
@@ -2929,7 +2929,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
     e.preventDefault();
     setNcteCreated(false);
     try {
-      const res = await fetch('http://localhost:5001/api/ncte-disclosures', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2945,7 +2945,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
         setNcteTitle(''); setNcteDesc(''); setNcteDate('');
         setNcteFileUrl(null); setNcteFileName(null);
         // Refresh list
-        const ncteRes = await fetch('http://localhost:5001/api/ncte-disclosures');
+        const ncteRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures`);
         const ncteData = ncteRes.ok ? await ncteRes.json() : [];
         setAllNcte(ncteData);
         setTimeout(() => setNcteCreated(false), 3500);
@@ -2963,9 +2963,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUser, set
       message: 'Are you sure you want to delete this NCTE disclosure?',
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/ncte-disclosures/${id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures/${id}`, { method: 'DELETE' });
           if (res.ok) {
-            const ncteRes = await fetch('http://localhost:5001/api/ncte-disclosures');
+            const ncteRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures`);
             const ncteData = ncteRes.ok ? await ncteRes.json() : [];
             setAllNcte(ncteData);
           }

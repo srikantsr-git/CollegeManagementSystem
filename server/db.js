@@ -1,250 +1,287 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
+const { Pool } = require('pg');
 const fs = require('fs');
+const path = require('path');
+require('dotenv').config();
 
-const dbPath = path.join(__dirname, 'alumni.db');
 const schemaPath = path.join(__dirname, 'schema.sql');
 
-// Establish Database Connection
-const db = new sqlite3.Database(dbPath, (err) => {
-  if (err) {
-    console.error('Failed to connect to SQLite database:', err.message);
-  } else {
-    console.log('Connected to SQLite database at:', dbPath);
-    db.run("PRAGMA foreign_keys = ON;", (pragmaErr) => {
-      if (pragmaErr) console.error('Failed to enable foreign keys:', pragmaErr.message);
-    });
-    initializeDatabase();
-  }
+// Establish PostgreSQL connection pool
+// Neon provides DATABASE_URL in the format postgres://...
+const connectionString = process.env.DATABASE_URL;
+
+const pool = new Pool({
+  connectionString: connectionString,
+  ssl: connectionString ? { rejectUnauthorized: false } : false
 });
 
-// Run Schema initialization
-function initializeDatabase() {
-  try {
-    const schema = fs.readFileSync(schemaPath, 'utf8');
-    db.exec(schema, (err) => {
-      if (err) {
-        console.error('Error executing schema.sql:', err.message);
-      } else {
-        console.log('Database schema verified & seeded successfully.');
-        db.run("ALTER TABLE custom_pages ADD COLUMN parent_menu TEXT DEFAULT 'about';", () => {
-          db.run("UPDATE custom_pages SET parent_menu = 'academic' WHERE id IN ('courses', 'admission', 'syllabus', 'academic_results');", () => {});
-          db.run("UPDATE custom_pages SET parent_menu = 'student' WHERE id IN ('souvenirs', 'calendar', 'draws', 'results');", () => {});
-        });
-        db.run("ALTER TABLE custom_pages ADD COLUMN menu_type TEXT DEFAULT 'child';", () => {});
-        db.run("ALTER TABLE custom_pages ADD COLUMN is_visible INTEGER DEFAULT 1;", () => {});
-        db.run("ALTER TABLE custom_pages ADD COLUMN show_slider INTEGER DEFAULT 0;", () => {});
-        db.run("ALTER TABLE custom_pages ADD COLUMN slider_slides TEXT DEFAULT '[]';", () => {});
-        db.run("ALTER TABLE custom_pages ADD COLUMN sort_order INTEGER DEFAULT 0;", () => {
-          const seedMenus = [
-            { id: 'about', title: 'About Us', parent_menu: 'none', menu_type: 'parent', sort_order: 1 },
-            { id: 'academic', title: 'Academic', parent_menu: 'none', menu_type: 'parent', sort_order: 2 },
-            { id: 'student', title: 'Student Corner', parent_menu: 'none', menu_type: 'parent', sort_order: 3 },
-            { id: 'directory', title: 'Alumni Directory', parent_menu: 'none', menu_type: 'standalone', sort_order: 4 },
-            { id: 'gallery', title: 'Gallery', parent_menu: 'none', menu_type: 'standalone', sort_order: 5 },
-            { id: 'placements', title: 'Placements', parent_menu: 'none', menu_type: 'standalone', sort_order: 6 },
-            { id: 'donations', title: 'Donations & Giving', parent_menu: 'none', menu_type: 'standalone', sort_order: 7 },
-            { id: 'contact', title: 'Contact', parent_menu: 'none', menu_type: 'standalone', sort_order: 8 },
-            { id: 'about_us', title: 'About Us', parent_menu: 'about', menu_type: 'child', sort_order: 1 },
-            { id: 'committee', title: 'Committee', parent_menu: 'about', menu_type: 'child', sort_order: 2 },
-            { id: 'hods', title: 'From HODs/Directors Desk', parent_menu: 'about', menu_type: 'child', sort_order: 3 },
-            { id: 'director', title: 'Director of Phy. Edu.', parent_menu: 'about', menu_type: 'child', sort_order: 4 },
-            { id: 'circulars', title: 'Circulars', parent_menu: 'about', menu_type: 'child', sort_order: 5 },
-            { id: 'news_notices', title: 'News and Notices', parent_menu: 'about', menu_type: 'child', sort_order: 6 },
-            { id: 'ncte', title: 'NCTE Mandatory Disclosures', parent_menu: 'about', menu_type: 'child', sort_order: 7 },
-            { id: 'facilities', title: 'Facilities', parent_menu: 'about', menu_type: 'child', sort_order: 8 },
-            { id: 'courses', title: 'Academic Courses', parent_menu: 'academic', menu_type: 'child', sort_order: 1 },
-            { id: 'admission', title: 'Admissions Notice', parent_menu: 'academic', menu_type: 'child', sort_order: 2 },
-            { id: 'syllabus', title: 'Curriculum Syllabus', parent_menu: 'academic', menu_type: 'child', sort_order: 3 },
-            { id: 'academic_results', title: 'Academic Results', parent_menu: 'academic', menu_type: 'child', sort_order: 4 },
-            { id: 'events', title: 'Events Registry', parent_menu: 'student', menu_type: 'child', sort_order: 1 },
-            { id: 'stories', title: 'Stories', parent_menu: 'student', menu_type: 'child', sort_order: 2 },
-            { id: 'careers', title: 'Internships & Careers', parent_menu: 'student', menu_type: 'child', sort_order: 3 },
-            { id: 'activities', title: 'Activities', parent_menu: 'student', menu_type: 'child', sort_order: 4 },
-            { id: 'research', title: 'Research', parent_menu: 'student', menu_type: 'child', sort_order: 5 },
-            { id: 'projects', title: 'Projects', parent_menu: 'student', menu_type: 'child', sort_order: 6 },
-            { id: 'calendar', title: 'Sports Calendar', parent_menu: 'student', menu_type: 'child', sort_order: 7 },
-            { id: 'souvenirs', title: 'Souvenirs', parent_menu: 'student', menu_type: 'child', sort_order: 8 },
-            { id: 'draws', title: 'Draws', parent_menu: 'student', menu_type: 'child', sort_order: 9 },
-            { id: 'results', title: 'Results', parent_menu: 'student', menu_type: 'child', sort_order: 10 }
-          ];
+// Seed flag tracking to prevent repeated seeding runs
+let isInitialized = false;
 
-          seedMenus.forEach(m => {
-            db.run(
-              "INSERT OR IGNORE INTO custom_pages (id, title, content, parent_menu, menu_type, sort_order, is_visible) VALUES (?, ?, '', ?, ?, ?, 1)",
-              [m.id, m.title, m.parent_menu, m.menu_type, m.sort_order]
-            );
-          });
-        });
-        db.run("ALTER TABLE settings ADD COLUMN show_top_header INTEGER DEFAULT 1;", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN top_header_phone TEXT DEFAULT '+953 012 3654 896';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN top_header_email TEXT DEFAULT 'support@apex.edu';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN top_header_bg_color TEXT DEFAULT '#800020';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN top_header_text_color TEXT DEFAULT '#ffffff';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN social_facebook TEXT DEFAULT '#';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN social_twitter TEXT DEFAULT '#';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN social_linkedin TEXT DEFAULT '#';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN social_instagram TEXT DEFAULT '#';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN social_youtube TEXT DEFAULT '#';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN top_header_links TEXT DEFAULT '[]';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN show_main_header INTEGER DEFAULT 1;", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN zonal_features TEXT DEFAULT '[]';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN zonal_features_header TEXT DEFAULT 'Core Zonal Features';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN zonal_features_desc TEXT DEFAULT 'Everything you need to stay updated with university sports, tournament structures, notices, and career opportunities.';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN univ_tagline TEXT DEFAULT 'Autonomous Institution | Approved by AICTE | Permanently Affiliated';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN accreditation_logos TEXT DEFAULT '[]';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_intro TEXT DEFAULT 'We, the Department of Sports & Physical Education, are always ready to provide information and answers to queries of students. We aim to resolve basic and common questions about courses and other related information.';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_address TEXT DEFAULT 'Department of Sports & Physical Education,\nIravati Karve Social Science Complex, Behind SET Guest House,\nSavitribai Phule Pune University,\n(formerly University of Pune),\nPune - 411007, Maharashtra, INDIA.';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_timings TEXT DEFAULT '10:30 am to 06:00 pm';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_timings_note TEXT DEFAULT 'The University office has holidays on the 1st and the 3rd Saturday of every month.';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_phone1 TEXT DEFAULT '+91 - 20 - 25622428';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_phone2 TEXT DEFAULT '+91 - 20 - 25622429';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_email1 TEXT DEFAULT 'dpe@unipune.ac.in';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_email2 TEXT DEFAULT 'dpeadmin@unipune.ac.in';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN contact_map_query TEXT DEFAULT 'Department of Sports and Physical Education, Savitribai Phule Pune University, Pune';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN show_company_slider INTEGER DEFAULT 1;", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN company_slider_title TEXT DEFAULT 'Our Placement Partners & Recruiters';", () => {});
-        db.run("ALTER TABLE settings ADD COLUMN company_slider_desc TEXT DEFAULT 'Our graduates have been placed in leading organizations across sports management, education, fitness, and public administration.';", () => {});
-        db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_url TEXT;", () => {});
-        db.run("ALTER TABLE committee_members ADD COLUMN profile_pdf_name TEXT;", () => {});
-        db.run("ALTER TABLE directors ADD COLUMN profile_pdf_url TEXT;", () => {});
-        db.run("ALTER TABLE directors ADD COLUMN profile_pdf_name TEXT;", () => {});
-        db.run("ALTER TABLE alumni_profiles ADD COLUMN address TEXT;", () => {});
-        db.run("ALTER TABLE alumni_profiles ADD COLUMN college TEXT;", () => {});
-        db.run("ALTER TABLE student_profiles ADD COLUMN photo_url TEXT;", () => {});
-        db.run("ALTER TABLE student_profiles ADD COLUMN resume_name TEXT;", () => {});
-        db.run("ALTER TABLE news ADD COLUMN file_url TEXT;", () => {});
-        db.run("ALTER TABLE news ADD COLUMN file_name TEXT;", () => {});
-        db.run(`CREATE TABLE IF NOT EXISTS hods (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, designation TEXT NOT NULL DEFAULT '', photo_url TEXT, college_name TEXT, college_address TEXT, mobile_number TEXT, email TEXT, message TEXT, sort_order INTEGER DEFAULT 0, profile_pdf_url TEXT, profile_pdf_name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`, () => {});
-        db.run(`CREATE TABLE IF NOT EXISTS spotlights (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          role TEXT,
-          grad TEXT,
-          photo TEXT,
-          text TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`, (err) => {
-          if (!err) {
-            db.get("SELECT COUNT(*) as count FROM spotlights", (countErr, row) => {
-              if (!countErr && row && row.count === 0) {
-                const stmt = db.prepare("INSERT INTO spotlights (name, role, grad, photo, text) VALUES (?, ?, ?, ?, ?)");
-                stmt.run("John Doe", "Staff Software Engineer at Google", "Class of 2012 (Computer Science)", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop&q=80", '"My years at Apex University formed the bedrock of my engineering career. The alumni network opened doors to my first internships, which eventually led me to Google. Serving as a mentor now is my way of giving back."');
-                stmt.run("Jane Smith", "Vice President at Goldman Sachs", "Class of 2014 (Business Management)", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&q=80", '"The mentorship and rigorous education I received set me up to tackle the challenges of Wall Street. The community is incredibly supportive, and I am proud to sponsor scholarship funds for future business leaders."');
-                stmt.run("Robert Chen", "Senior Architect at Foster + Partners", "Class of 2010 (Architecture)", "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300&h=300&fit=crop&q=80", '"Design is collaborative, and the creative environment at Apex taught me to push boundaries. Reconnecting with alumni in Europe helped establish my career abroad. It is a lifelong community."');
-                stmt.finalize();
-              }
-            });
-          }
-        });
+// Auto-initialize the database (runs on startup)
+initializeDatabase();
 
-        // Create gallery table if not exists (migration-safe)
-        db.run(`CREATE TABLE IF NOT EXISTS gallery (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          title TEXT NOT NULL,
-          description TEXT,
-          category TEXT NOT NULL DEFAULT 'General',
-          image_url TEXT NOT NULL,
-          photographer TEXT,
-          location TEXT,
-          date TEXT,
-          sort_order INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`, () => {});
+// Conflict targets mapped by table name for Postgres ON CONFLICT clause
+const conflictTargets = {
+  settings: 'id',
+  users: 'id',
+  alumni_profiles: 'user_id',
+  student_profiles: 'user_id',
+  events: 'id',
+  event_registrations: 'id', // event_id, user_id also has UNIQUE
+  jobs: 'id',
+  job_applications: 'id',
+  mentorships: 'id',
+  donations: 'id',
+  news: 'id',
+  custom_pages: 'id',
+  courses: 'id',
+  circulars: 'id',
+  ncte_disclosures: 'id',
+  committee_members: 'id',
+  directors: 'id',
+  admission_files: 'id',
+  hods: 'id',
+  gallery: 'id',
+  placement_content: 'id',
+  placement_companies: 'id',
+  spotlights: 'id',
+  slider_slides: 'id',
+  admissions: 'id'
+};
 
-        // Create placement tables (migration-safe)
-        db.run(`CREATE TABLE IF NOT EXISTS placement_content (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          hero_title TEXT DEFAULT 'Placements',
-          hero_subtitle TEXT DEFAULT 'Building careers, Shaping futures',
-          content TEXT DEFAULT '',
-          stat_placed INTEGER DEFAULT 0,
-          stat_companies INTEGER DEFAULT 0,
-          stat_package_avg TEXT DEFAULT '0 LPA',
-          stat_package_highest TEXT DEFAULT '0 LPA',
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`, () => {
-          db.get('SELECT COUNT(*) as count FROM placement_content', (e, row) => {
-            if (!e && row && row.count === 0) {
-              db.run(`INSERT INTO placement_content (hero_title, hero_subtitle, content, stat_placed, stat_companies, stat_package_avg, stat_package_highest)
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                ['Training & Placement Cell',
-                 'Empowering students with industry-ready skills and connecting them with top recruiters worldwide.',
-                 '<h2>About Our Placement Cell</h2><p>The Training and Placement Cell of our institution serves as a vital bridge between academia and the corporate world. We are dedicated to preparing students for the dynamic demands of the professional environment through comprehensive training programs, mock interviews, and industry interactions.</p><p>Our placement cell maintains strong relationships with leading companies across various sectors, ensuring a wide range of career opportunities for our graduating students.</p><h2>Our Training Programs</h2><p>We offer specialized training in aptitude, communication skills, technical skills, and personality development throughout the academic year. Industry experts conduct regular sessions to keep students updated with the latest trends.</p>',
-                 450, 85, '6.5 LPA', '42 LPA'
-                ], () => {});
-            }
-          });
-        });
+// SQL Statement Converter
+function convertSql(sql) {
+  if (!sql) return sql;
+  
+  let pgSql = sql.trim();
+  
+  // 1. Remove trailing semicolon if present (to safely append clauses like RETURNING)
+  pgSql = pgSql.replace(/;+$/, '');
 
-        db.run(`CREATE TABLE IF NOT EXISTS placement_companies (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT NOT NULL,
-          logo_url TEXT,
-          website TEXT,
-          sort_order INTEGER DEFAULT 0,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`, () => {
-          db.get('SELECT COUNT(*) as count FROM placement_companies', (e, row) => {
-            if (!e && row && row.count === 0) {
-              const stmt = db.prepare("INSERT INTO placement_companies (name, logo_url, website, sort_order) VALUES (?, ?, ?, ?)");
-              stmt.run("Google", "https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg", "https://google.com", 1);
-              stmt.run("Goldman Sachs", "https://upload.wikimedia.org/wikipedia/commons/6/61/Goldman_Sachs.svg", "https://goldmansachs.com", 2);
-              stmt.run("Netflix", "https://upload.wikimedia.org/wikipedia/commons/0/08/Netflix_2015_logo.svg", "https://netflix.com", 3);
-              stmt.run("Microsoft", "https://upload.wikimedia.org/wikipedia/commons/9/96/Microsoft_logo_2012.svg", "https://microsoft.com", 4);
-              stmt.run("Amazon", "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg", "https://amazon.com", 5);
-              stmt.run("Tata Consultancy Services", "https://upload.wikimedia.org/wikipedia/commons/b/b1/Tata_Consultancy_Services_Logo.svg", "https://tcs.com", 6);
-              stmt.run("Infosys", "https://upload.wikimedia.org/wikipedia/commons/9/95/Infosys_logo.svg", "https://infosys.com", 7);
-              stmt.finalize();
-            }
-          });
-        });
-
-      }
-    });
-  } catch (err) {
-    console.error('Failed to read schema.sql file:', err.message);
+  // 2. Convert sqlite's PRAGMA statements (ignore or rewrite)
+  if (pgSql.toUpperCase().startsWith('PRAGMA')) {
+    return 'SELECT 1'; // dummy statement
   }
+
+  // 3. Convert LIKE to ILIKE for case-insensitive matching matching SQLite behavior
+  pgSql = pgSql.replace(/\bLIKE\b/gi, 'ILIKE');
+
+  // 4. Convert SQLite placeholders (?) to PostgreSQL ($1, $2...)
+  let paramIndex = 1;
+  pgSql = pgSql.replace(/\?/g, () => `$${paramIndex++}`);
+
+  // 5. Handle settings table INSERT OR REPLACE
+  // Settings only ever has 1 row with id=1, so we convert INSERT OR REPLACE to a standard UPDATE
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+settings/i.test(pgSql)) {
+    const colMatch = pgSql.match(/settings\s*\(([^)]+)\)/i);
+    if (colMatch) {
+      const cols = colMatch[1].split(',').map(s => s.trim().toLowerCase());
+      // Reconstruct: UPDATE settings SET col1 = $1, col2 = $2... WHERE id = 1
+      // Since id=1 is hardcoded in the query and not passed in parameters, we start updates list at cols[1]
+      const updates = [];
+      for (let i = 1; i < cols.length; i++) {
+        updates.push(`${cols[i]} = $${i}`);
+      }
+      return `UPDATE settings SET ${updates.join(', ')} WHERE id = 1`;
+    }
+  }
+
+  // 6. Convert general INSERT OR REPLACE to ON CONFLICT DO UPDATE
+  if (/INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)/i.test(pgSql)) {
+    const match = pgSql.match(/INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)/i);
+    if (match) {
+      const tableName = match[1];
+      const columnsStr = match[2];
+      const columns = columnsStr.split(',').map(c => c.trim().toLowerCase());
+      const target = conflictTargets[tableName.toLowerCase()] || 'id';
+      
+      const updates = columns
+        .filter(c => c !== target)
+        .map(c => `${c} = EXCLUDED.${c}`)
+        .join(', ');
+        
+      pgSql = pgSql.replace(/INSERT\s+OR\s+REPLACE\s+INTO/i, 'INSERT INTO');
+      pgSql += ` ON CONFLICT (${target}) DO UPDATE SET ${updates}`;
+      return pgSql;
+    }
+  }
+
+  // 7. Convert INSERT OR IGNORE to ON CONFLICT DO NOTHING
+  const matchIgnore = pgSql.match(/INSERT\s+OR\s+IGNORE\s+INTO\s+(\w+)/i);
+  if (matchIgnore) {
+    const tableName = matchIgnore[1].toLowerCase();
+    let target = conflictTargets[tableName] || 'id';
+    
+    // Custom handling for composite unique constraints
+    if (tableName === 'event_registrations') {
+      target = 'event_id, user_id';
+    } else if (tableName === 'job_applications') {
+      target = 'job_id, user_id';
+    } else if (tableName === 'mentorships') {
+      target = 'mentor_id, mentee_id';
+    }
+    
+    pgSql = pgSql.replace(/INSERT\s+OR\s+IGNORE\s+INTO/i, 'INSERT INTO');
+    pgSql += ` ON CONFLICT (${target}) DO NOTHING`;
+  }
+
+  // 8. Convert SQLite table creation types
+  pgSql = pgSql.replace(/AUTOINCREMENT/gi, '');
+  pgSql = pgSql.replace(/id\s+INTEGER\s+PRIMARY\s+KEY\s*(?:AUTOINCREMENT)?/gi, 'id SERIAL PRIMARY KEY');
+  pgSql = pgSql.replace(/id\s+INT\s+PRIMARY\s+KEY\s*(?:AUTOINCREMENT)?/gi, 'id SERIAL PRIMARY KEY');
+  pgSql = pgSql.replace(/\bDATETIME\b/gi, 'TIMESTAMP');
+
+  return pgSql;
 }
 
-// Database helper utilities using Promises
-const query = {
-  get(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      db.get(sql, params, (err, row) => {
-        if (err) reject(err);
-        else resolve(row);
-      });
-    });
+// Custom mock for SQLite's Database object to avoid rewriting index.js direct queries
+const db = {
+  serialize(callback) {
+    // Simply execute the callback synchronously. The nested callbacks in client queries enforce order naturally.
+    callback();
   },
 
-  all(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      db.all(sql, params, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
+  run(sql, params, callback) {
+    let actualParams = params;
+    let actualCallback = callback;
+    if (typeof params === 'function') {
+      actualCallback = params;
+      actualParams = [];
+    }
+    
+    const pgSql = convertSql(sql);
+    pool.query(pgSql, actualParams)
+      .then(res => {
+        if (actualCallback) actualCallback(null);
+      })
+      .catch(err => {
+        console.error('db.run error:', err.message, 'SQL:', pgSql);
+        if (actualCallback) actualCallback(err);
       });
-    });
   },
 
-  run(sql, params = []) {
-    return new Promise((resolve, reject) => {
-      db.run(sql, params, function (err) {
-        if (err) reject(err);
-        else resolve({ id: this.lastID, changes: this.changes });
+  get(sql, params, callback) {
+    let actualParams = params;
+    let actualCallback = callback;
+    if (typeof params === 'function') {
+      actualCallback = params;
+      actualParams = [];
+    }
+    
+    const pgSql = convertSql(sql);
+    pool.query(pgSql, actualParams)
+      .then(res => {
+        const row = res.rows[0];
+        // SQLite expects COUNT(*) column aliases to map cleanly
+        if (row && row.count !== undefined) {
+          row['COUNT(*)'] = parseInt(row.count, 10);
+          row.cnt = parseInt(row.count, 10);
+          row.count = parseInt(row.count, 10);
+        }
+        if (actualCallback) actualCallback(null, row);
+      })
+      .catch(err => {
+        console.error('db.get error:', err.message, 'SQL:', pgSql);
+        if (actualCallback) actualCallback(err, null);
       });
-    });
   },
 
-  exec(sql) {
-    return new Promise((resolve, reject) => {
-      db.exec(sql, (err) => {
-        if (err) reject(err);
-        else resolve();
+  all(sql, params, callback) {
+    let actualParams = params;
+    let actualCallback = callback;
+    if (typeof params === 'function') {
+      actualCallback = params;
+      actualParams = [];
+    }
+    
+    const pgSql = convertSql(sql);
+    pool.query(pgSql, actualParams)
+      .then(res => {
+        if (actualCallback) actualCallback(null, res.rows);
+      })
+      .catch(err => {
+        console.error('db.all error:', err.message, 'SQL:', pgSql);
+        if (actualCallback) actualCallback(err, null);
       });
-    });
+  },
+
+  exec(sql, callback) {
+    const pgSql = convertSql(sql);
+    pool.query(pgSql)
+      .then(() => {
+        if (callback) callback(null);
+      })
+      .catch(err => {
+        console.error('db.exec error:', err.message, 'SQL:', pgSql);
+        if (callback) callback(err);
+      });
   }
 };
+
+// Database helper utilities using Promises (used extensively in index.js)
+const query = {
+  async get(sql, params = []) {
+    const pgSql = convertSql(sql);
+    const res = await pool.query(pgSql, params);
+    const row = res.rows[0];
+    if (row && row.count !== undefined) {
+      row['COUNT(*)'] = parseInt(row.count, 10);
+      row.cnt = parseInt(row.count, 10);
+      row.count = parseInt(row.count, 10);
+    }
+    return row;
+  },
+
+  async all(sql, params = []) {
+    const pgSql = convertSql(sql);
+    const res = await pool.query(pgSql, params);
+    return res.rows;
+  },
+
+  async run(sql, params = []) {
+    let pgSql = convertSql(sql);
+    const isInsert = /^\s*INSERT\s+/i.test(pgSql);
+    
+    // Automatically append RETURNING id to INSERT statements where id auto-increments
+    if (isInsert && !/RETURNING/i.test(pgSql)) {
+      const isProfileInsert = /alumni_profiles|student_profiles/i.test(pgSql);
+      if (!isProfileInsert) {
+        pgSql += ' RETURNING id';
+      }
+    }
+    
+    const res = await pool.query(pgSql, params);
+    const lastRow = res.rows[0];
+    return {
+      id: lastRow ? lastRow.id : null,
+      changes: res.rowCount
+    };
+  },
+
+  async exec(sql) {
+    const pgSql = convertSql(sql);
+    await pool.query(pgSql);
+  }
+};
+
+// Run Schema initialization
+async function initializeDatabase() {
+  if (isInitialized) return;
+  try {
+    if (!connectionString) {
+      console.warn('Warning: DATABASE_URL not set. Skipping DB initialization.');
+      return;
+    }
+    console.log('Initializing database schema on Neon PostgreSQL...');
+    const schema = fs.readFileSync(schemaPath, 'utf8');
+    // Run schema.sql statements
+    await pool.query(schema);
+    console.log('Database schema verified & seeded successfully.');
+    isInitialized = true;
+  } catch (err) {
+    console.error('Failed database initialization:', err.message);
+  }
+}
 
 module.exports = {
   db,

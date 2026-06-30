@@ -37,7 +37,7 @@ export const Directory: React.FC<DirectoryProps> = ({ currentUser, setCurrentTab
     if (industry) params.append('industry', industry);
     if (country) params.append('country', country);
 
-    fetch(`http://localhost:5001/api/alumni?${params.toString()}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/alumni?${params.toString()}`)
       .then((res) => {
         if (!res.ok) throw new Error('API server unavailable');
         return res.json();
@@ -82,7 +82,7 @@ export const Directory: React.FC<DirectoryProps> = ({ currentUser, setCurrentTab
     }
 
     try {
-      const res = await fetch('http://localhost:5001/api/mentorship/request', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship/request`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

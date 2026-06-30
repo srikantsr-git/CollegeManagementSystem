@@ -50,7 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
   const [customPages, setCustomPages] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5001/api/custom-pages?_t=${Date.now()}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages?_t=${Date.now()}`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setCustomPages(data))
       .catch(err => console.warn('Navbar failed to fetch custom pages:', err));

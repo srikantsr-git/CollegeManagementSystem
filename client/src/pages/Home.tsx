@@ -124,7 +124,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
   // Fetch slides from API
   useEffect(() => {
-    fetch('http://localhost:5001/api/slider')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/slider`)
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         const active = data.filter((s: any) => s.active);
@@ -156,7 +156,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
   // Fetch events list from server API
   useEffect(() => {
-    fetch('http://localhost:5001/api/events')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`)
       .then(res => res.json())
       .then(data => setEvents(data.slice(0, 3)))
       .catch(err => console.warn('Could not load events from server:', err));
@@ -164,7 +164,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
   // Fetch dynamic news feed
   useEffect(() => {
-    fetch('http://localhost:5001/api/news')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -181,7 +181,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
   // Fetch dynamic alumni spotlights
   useEffect(() => {
-    fetch('http://localhost:5001/api/spotlights')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/spotlights`)
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {
@@ -193,7 +193,7 @@ export const Home: React.FC<HomeProps> = ({ setCurrentTab, currentUser }) => {
 
   // Fetch placement companies for logo slider
   useEffect(() => {
-    fetch('http://localhost:5001/api/placement/companies')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/placement/companies`)
       .then(res => res.ok ? res.json() : [])
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {

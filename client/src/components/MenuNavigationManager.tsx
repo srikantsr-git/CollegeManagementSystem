@@ -123,7 +123,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
     setErrorMsg('');
     setSuccessMsg('');
     setLoading(true);
-    fetch(`http://localhost:5001/api/custom-pages/${page.id}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${page.id}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data) {
@@ -239,8 +239,8 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
 
     try {
       const url = editingPage 
-        ? `http://localhost:5001/api/custom-pages/${editingPage.id}` 
-        : `http://localhost:5001/api/custom-pages`;
+        ? `${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${editingPage.id}` 
+        : `${import.meta.env.VITE_API_URL || ''}/api/custom-pages`;
       const method = editingPage ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -269,7 +269,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
   const handleToggleVisibility = async (page: PageItem) => {
     const nextStatus = page.is_visible === 1 ? 0 : 1;
     try {
-      const res = await fetch(`http://localhost:5001/api/custom-pages/${page.id}/visibility`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${page.id}/visibility`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_visible: nextStatus })
@@ -287,7 +287,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
     const currentOrder = page.sort_order || 0;
     const nextOrder = currentOrder + direction;
     try {
-      const res = await fetch(`http://localhost:5001/api/custom-pages/${page.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${page.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         // Load full details first to prevent wiping content
@@ -318,7 +318,7 @@ export const MenuNavigationManager: React.FC<MenuNavigationManagerProps> = ({
       message: `Are you sure you want to delete the menu item "${page.title}"? This will permanently delete the page and any associated content.`,
       onConfirm: async () => {
         try {
-          const res = await fetch(`http://localhost:5001/api/custom-pages/${page.id}`, { method: 'DELETE' });
+          const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${page.id}`, { method: 'DELETE' });
           if (res.ok) {
             onRefresh();
           }

@@ -90,7 +90,7 @@ const ResultsPanel: React.FC<{ mode: 'draws' | 'results' }> = ({ mode }) => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/results')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/results`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setResults(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -318,7 +318,7 @@ const CoursesPanel: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/courses')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/courses`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setCourses(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -403,8 +403,8 @@ const AdmissionPanel: React.FC<{
 
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:5001/api/admissions').then(r => r.ok ? r.json() : []).catch(() => []),
-      fetch('http://localhost:5001/api/admission-files').then(r => r.ok ? r.json() : []).catch(() => [])
+      fetch(`${import.meta.env.VITE_API_URL || ''}/api/admissions`).then(r => r.ok ? r.json() : []).catch(() => []),
+      fetch(`${import.meta.env.VITE_API_URL || ''}/api/admission-files`).then(r => r.ok ? r.json() : []).catch(() => [])
     ]).then(([admData, filesData]) => {
       setAdmissions(Array.isArray(admData) ? admData : (admData ? [admData] : []));
       setAdmFiles(Array.isArray(filesData) ? filesData : []);
@@ -599,7 +599,7 @@ const CircularsPanel: React.FC = () => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/circulars')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/circulars`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setCirculars(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -791,7 +791,7 @@ const NewsNoticesPanel: React.FC = () => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/news')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/news`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setNewsList(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -985,7 +985,7 @@ const NctePanel: React.FC = () => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/ncte-disclosures')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/ncte-disclosures`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setNcte(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1207,7 +1207,7 @@ const CommitteePanel: React.FC<CommitteePanelProps> = ({ onSelectMember }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/committee')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/committee`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setMembers(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1349,7 +1349,7 @@ const DirectorsPanel: React.FC<DirectorsPanelProps> = ({ onSelectMember }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/directors')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/directors`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setDirectors(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1486,7 +1486,7 @@ const HodsPanel: React.FC<HodsPanelProps> = ({ onSelectMember }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/hods')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/hods`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setHods(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1726,7 +1726,7 @@ const CareersPanel: React.FC = () => {
   const itemsPerPage = 20;
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/jobs')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`)
       .then(res => res.ok ? res.json() : [])
       .then(data => { setJobs(data); setLoading(false); })
       .catch(() => setLoading(false));
@@ -2058,7 +2058,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
   const [customPages, setCustomPages] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch(`http://localhost:5001/api/custom-pages?_t=${Date.now()}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages?_t=${Date.now()}`)
       .then(res => res.ok ? res.json() : [])
       .then(data => setCustomPages(data))
       .catch(err => console.warn('AboutPage failed to fetch custom pages:', err));
@@ -2194,7 +2194,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
     setLoading(true);
     setError(null);
     setPageData(null);
-    fetch(`http://localhost:5001/api/custom-pages/${subpageId}?_t=${Date.now()}`)
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/custom-pages/${subpageId}?_t=${Date.now()}`)
       .then(res => {
         if (!res.ok) throw new Error('Content not yet published by administrator.');
         return res.json();

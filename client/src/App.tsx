@@ -168,11 +168,11 @@ const MainAppContent: React.FC = () => {
 
   const fetchGlobalData = async () => {
     try {
-      const eRes = await fetch('http://localhost:5001/api/events');
+      const eRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events`);
       const eData = await eRes.json();
       if (eRes.ok) setEvents(eData);
 
-      const jRes = await fetch('http://localhost:5001/api/jobs');
+      const jRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
       const jData = await jRes.json();
       if (jRes.ok) setJobs(jData);
     } catch (err) {
@@ -183,7 +183,7 @@ const MainAppContent: React.FC = () => {
   const fetchRegisteredEvents = async () => {
     if (!currentUser) return;
     try {
-      const res = await fetch(`http://localhost:5001/api/events/registered/${currentUser.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events/registered/${currentUser.id}`);
       const data = await res.json();
       if (res.ok) setRegisteredEventIds(data.map((e: any) => e.id));
     } catch (err) {
@@ -210,7 +210,7 @@ const MainAppContent: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001/api/events/${eventId}/register`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/events/${eventId}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: currentUser.id })

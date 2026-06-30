@@ -65,7 +65,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/alumni/${currentUser.id}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/alumni/${currentUser.id}`);
       const data = await res.json();
       if (res.ok) {
         setProfile(data);
@@ -96,17 +96,17 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
     await fetchProfile();
     try {
       // Mentorship matches
-      const mRes = await fetch(`http://localhost:5001/api/mentorship?userId=${currentUser.id}&role=alumni`);
+      const mRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship?userId=${currentUser.id}&role=alumni`);
       const mData = await mRes.json();
       if (mRes.ok) setMentorships(mData);
 
       // Jobs posted by this user
-      const jRes = await fetch('http://localhost:5001/api/jobs');
+      const jRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
       const jData = await jRes.json();
       if (jRes.ok) setPostedJobs(jData.filter((job: any) => job.posted_by === currentUser.id));
 
       // Donations by this user
-      const dRes = await fetch(`http://localhost:5001/api/donations?userId=${currentUser.id}`);
+      const dRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/donations?userId=${currentUser.id}`);
       const dData = await dRes.json();
       if (dRes.ok) setDonations(dData);
 
@@ -124,7 +124,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch(`http://localhost:5001/api/alumni/${currentUser.id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/alumni/${currentUser.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,7 +159,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
   const handleJobSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:5001/api/jobs', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -185,7 +185,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
         setJobSalary('');
         
         // Refresh Job List
-        const jRes = await fetch('http://localhost:5001/api/jobs');
+        const jRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/jobs`);
         const jData = await jRes.json();
         setPostedJobs(jData.filter((job: any) => job.posted_by === currentUser.id));
 
@@ -199,7 +199,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
   // Mentorship Response
   const handleMentorshipResponse = async (mId: number, status: 'approved' | 'rejected') => {
     try {
-      const res = await fetch('http://localhost:5001/api/mentorship/respond', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship/respond`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mentorshipId: mId, status })
@@ -207,7 +207,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
       if (res.ok) {
         alert(`Mentorship application ${status}!`);
         // Refresh Mentorship list
-        const mRes = await fetch(`http://localhost:5001/api/mentorship?userId=${currentUser.id}&role=alumni`);
+        const mRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship?userId=${currentUser.id}&role=alumni`);
         const mData = await mRes.json();
         setMentorships(mData);
       }
@@ -221,7 +221,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
     e.preventDefault();
     if (!scheduleMeetingTarget) return;
     try {
-      const res = await fetch('http://localhost:5001/api/mentorship/schedule', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship/schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +239,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
         setMeetingTopic('');
         
         // Refresh
-        const mRes = await fetch(`http://localhost:5001/api/mentorship?userId=${currentUser.id}&role=alumni`);
+        const mRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/mentorship?userId=${currentUser.id}&role=alumni`);
         const mData = await mRes.json();
         setMentorships(mData);
       }
@@ -253,7 +253,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
     e.preventDefault();
     if (!donateAmount || isNaN(Number(donateAmount))) return;
     try {
-      const res = await fetch('http://localhost:5001/api/donations', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/donations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -269,7 +269,7 @@ export const AlumniDashboard: React.FC<AlumniDashboardProps> = ({ currentUser, s
         setDonateAmount('');
         
         // Refresh Donations list
-        const dRes = await fetch(`http://localhost:5001/api/donations?userId=${currentUser.id}`);
+        const dRes = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/donations?userId=${currentUser.id}`);
         const dData = await dRes.json();
         setDonations(dData);
       }

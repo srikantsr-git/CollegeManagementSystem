@@ -35,8 +35,8 @@ const GalleryPage: React.FC = () => {
     setLoading(true);
     try {
       const url = activeCategory !== 'All'
-        ? `http://localhost:5001/api/gallery?category=${encodeURIComponent(activeCategory)}`
-        : 'http://localhost:5001/api/gallery';
+        ? `${import.meta.env.VITE_API_URL || ''}/api/gallery?category=${encodeURIComponent(activeCategory)}`
+        : `${import.meta.env.VITE_API_URL || ''}/api/gallery`;
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
@@ -49,7 +49,7 @@ const GalleryPage: React.FC = () => {
   }, [activeCategory]);
 
   useEffect(() => {
-    fetch('http://localhost:5001/api/gallery/categories')
+    fetch(`${import.meta.env.VITE_API_URL || ''}/api/gallery/categories`)
       .then(r => r.ok ? r.json() : [])
       .then(cats => setCategories(cats))
       .catch(() => {});
