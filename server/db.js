@@ -325,6 +325,20 @@ if (connectionString) {
   async function initializePostgresDatabase() {
     if (isInitialized) return;
     try {
+      // Check if tables already exist to avoid redundant reads & executions
+      const checkRes = await pool.query(`
+        SELECT EXISTS (
+          SELECT FROM pg_tables
+          WHERE schemaname = 'public'
+          AND tablename  = 'settings'
+        );
+      `);
+      if (checkRes.rows[0].exists) {
+        console.log('Neon PostgreSQL database schema is already initialized.');
+        isInitialized = true;
+        return;
+      }
+
       console.log('Initializing database schema on Neon PostgreSQL...');
       const schema = fs.readFileSync(schemaPath, 'utf8');
       await pool.query(schema);
@@ -336,10 +350,36 @@ if (connectionString) {
   }
 
 } else {
-  console.error('ERROR: DATABASE_URL environment variable is not set.');
-  console.error('To run this application, you must provide a PostgreSQL connection string in DATABASE_URL.');
-  console.error('Please configure DATABASE_URL in your .env file or environment variables.');
-  throw new Error('DATABASE_URL environment variable is required.');
+  console.warn('WARNING: DATABASE_URL environment variable is not set. Database operations will fail.');
+  
+  db = {
+    serialize(cb) { cb(); },
+    run(sql, params, cb) {
+      const callback = typeof params === 'function' ? params : cb;
+      if (callback) callback(new Error('DATABASE_URL is not set.'));
+    },
+    get(sql, params, cb) {
+      const callback = typeof params === 'function' ? params : cb;
+      if (callback) callback(new Error('DATABASE_URL is not set.'), null);
+    },
+    all(sql, params, cb) {
+      const callback = typeof params === 'function' ? params : cb;
+      if (callback) callback(new Error('DATABASE_URL is not set.'), null);
+    },
+    exec(sql, cb) { if (cb) cb(new Error('DATABASE_URL is not set.')); },
+    prepare(sql, cb) {
+      const err = new Error('DATABASE_URL is not set.');
+      if (cb) cb(err);
+      return { run(...args) { const c = args[args.length - 1]; if (typeof c === 'function') c(err); }, finalize(c) { if (c) c(err); } };
+    }
+  };
+
+  query = {
+    async get() { return { error: 'DATABASE_URL environment variable is not set. Please configure DATABASE_URL in your Vercel project environment settings.' }; },
+    async all() { return [{ error: 'DATABASE_URL environment variable is not set. Please configure DATABASE_URL in your Vercel project environment settings.' }]; },
+    async run() { return { error: 'DATABASE_URL environment variable is not set. Please configure DATABASE_URL in your Vercel project environment settings.' }; },
+    async exec() { throw new Error('DATABASE_URL environment variable is not set.'); }
+  };
 }
 
 module.exports = {
