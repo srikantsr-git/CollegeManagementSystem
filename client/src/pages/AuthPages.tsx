@@ -43,6 +43,7 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
   const [achievements, setAchievements] = useState('');
   
   const [successRegister, setSuccessRegister] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
 
   const resetForms = () => {
     setEmail('');
@@ -58,20 +59,30 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
     setLinkedin('');
     setSkills('');
     setAchievements('');
+    setCaptchaToken('');
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    if (!captchaToken) {
+      setErrorMsg('Please complete the CAPTCHA verification.');
+      return;
+    }
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role: selectedRole })
+        body: JSON.stringify({ email, password, role: selectedRole, captchaToken })
       });
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(data.error || 'Login failed');
+        // Reset captcha on failure
+        if (typeof window !== 'undefined' && (window as any).grecaptcha && (window as any).grecaptcha.reset) {
+          (window as any).grecaptcha.reset();
+        }
+        setCaptchaToken('');
         return;
       }
       if (data.otpRequired) {
@@ -106,6 +117,10 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    if (!captchaToken) {
+      setErrorMsg('Please complete the CAPTCHA verification.');
+      return;
+    }
     
     const profileData = regRole === 'alumni' ? {
       grad_year: parseInt(gradYear),
@@ -140,12 +155,17 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
           password: regPassword,
           full_name: fullName,
           mobile,
-          profileData
+          profileData,
+          captchaToken
         })
       });
       const data = await res.json();
       if (!res.ok) {
         setErrorMsg(data.error || 'Registration failed');
+        if (typeof window !== 'undefined' && (window as any).grecaptcha && (window as any).grecaptcha.reset) {
+          (window as any).grecaptcha.reset();
+        }
+        setCaptchaToken('');
         return;
       }
       setSuccessRegister(true);
@@ -153,6 +173,50 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
       setErrorMsg('Failed to reach registration server.');
     }
   };
+
+  React.useEffect(() => {
+    setCaptchaToken('');
+    
+    const renderCaptcha = () => {
+      if (typeof window !== 'undefined' && (window as any).grecaptcha && (window as any).grecaptcha.render) {
+        try {
+          const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
+          const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+          const theme = isDark ? 'dark' : 'light';
+          
+          if (authMode === 'login' && !otpRequired && document.getElementById('recaptcha-login')) {
+            const container = document.getElementById('recaptcha-login');
+            if (container) container.innerHTML = '';
+            (window as any).grecaptcha.render('recaptcha-login', {
+              sitekey: siteKey,
+              theme: theme,
+              callback: (token: string) => setCaptchaToken(token),
+              'expired-callback': () => setCaptchaToken(''),
+            });
+          } else if (authMode === 'register' && !successRegister && document.getElementById('recaptcha-register')) {
+            const container = document.getElementById('recaptcha-register');
+            if (container) container.innerHTML = '';
+            (window as any).grecaptcha.render('recaptcha-register', {
+              sitekey: siteKey,
+              theme: theme,
+              callback: (token: string) => setCaptchaToken(token),
+              'expired-callback': () => setCaptchaToken(''),
+            });
+          }
+        } catch (err) {
+          console.warn('reCAPTCHA render warning (element might already be rendered):', err);
+        }
+      }
+    };
+
+    const timer = setTimeout(renderCaptcha, 200);
+    (window as any).onRecaptchaLoad = renderCaptcha;
+
+    return () => {
+      clearTimeout(timer);
+      delete (window as any).onRecaptchaLoad;
+    };
+  }, [authMode, otpRequired, successRegister]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -281,6 +345,16 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
                     placeholder="••••••••"
                     className="w-full glass-input pl-10 text-sm"
                   />
+                </div>
+              </div>
+
+              {/* reCAPTCHA Checkbox */}
+              <div className="flex flex-col gap-1.5 text-left my-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <span>🤖 Spam Protection</span>
+                </label>
+                <div className="p-3 bg-slate-100/30 dark:bg-slate-900/30 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-inner flex items-center justify-center min-h-[96px] backdrop-blur-sm">
+                  <div id="recaptcha-login"></div>
                 </div>
               </div>
 
@@ -666,6 +740,16 @@ export const AuthPages: React.FC<AuthPagesProps> = ({ setCurrentUser, setCurrent
                   </div>
                 </>
               )}
+
+              {/* reCAPTCHA Checkbox */}
+              <div className="flex flex-col gap-1.5 text-left my-2">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <span>🤖 Spam Protection</span>
+                </label>
+                <div className="p-3 bg-slate-100/30 dark:bg-slate-900/30 rounded-2xl border border-slate-200/50 dark:border-slate-800/40 shadow-inner flex items-center justify-center min-h-[96px] backdrop-blur-sm">
+                  <div id="recaptcha-register"></div>
+                </div>
+              </div>
 
               <button type="submit" className="w-full btn-primary py-3.5 mt-4 text-xs font-bold">
                 Submit Registration Request

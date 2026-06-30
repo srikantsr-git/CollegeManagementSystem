@@ -125,9 +125,33 @@ app.post('/api/settings', async (req, res) => {
   }
 });
 
+// --- Google reCAPTCHA Verification Helper ---
+async function verifyRecaptcha(token) {
+  const secretKey = process.env.RECAPTCHA_SECRET_KEY || '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe';
+  if (!token) return false;
+  try {
+    const response = await globalThis.fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${secretKey}&response=${token}`
+    });
+    const data = await response.json();
+    return !!data.success;
+  } catch (err) {
+    console.error('reCAPTCHA verification error:', err.message);
+    return false;
+  }
+}
+
 // --- AUTHENTICATION API ---
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password, role, captchaToken } = req.body;
+  
+  // Verify CAPTCHA
+  const isCaptchaValid = await verifyRecaptcha(captchaToken);
+  if (!isCaptchaValid) {
+    return res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
+  }
   try {
     const user = await query.get(
       'SELECT id, email, password, role, full_name, status FROM users WHERE email = ? AND role = ?',
@@ -172,7 +196,13 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 });
 
 app.post('/api/auth/register', async (req, res) => {
-  const { role, email, password, full_name, mobile, profileData } = req.body;
+  const { role, email, password, full_name, mobile, profileData, captchaToken } = req.body;
+  
+  // Verify CAPTCHA
+  const isCaptchaValid = await verifyRecaptcha(captchaToken);
+  if (!isCaptchaValid) {
+    return res.status(400).json({ error: 'reCAPTCHA verification failed. Please try again.' });
+  }
   try {
     // Check if user already exists
     const existingUser = await query.get('SELECT id FROM users WHERE email = ?', [email]);
