@@ -13,18 +13,18 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "api/index.js"
+      "source": "/api/:path*",
+      "destination": "/api/index.js"
     },
     {
-      "src": "/uploads/(.*)",
-      "dest": "api/index.js"
+      "source": "/uploads/:path*",
+      "destination": "/api/index.js"
     },
     {
-      "src": "/(.*)",
-      "dest": "client/dist/$1"
+      "source": "/((?!api|uploads).*)",
+      "destination": "/index.html"
     }
   ]
 }
