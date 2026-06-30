@@ -1,5 +1,4 @@
-const sqlite3 = require('sqlite3').verbose();
-const db = new sqlite3.Database('./server/database.sqlite');
+const { query } = require('./server/db');
 
 const fullHtml = `
   <p>The Department is offering a Three-Month Foundation Course in Yoga Education (formerly known as Certificate Course in Yoga Education) twice a year.</p>
@@ -36,7 +35,6 @@ const fullHtml = `
   </div>
 `;
 
-db.run('UPDATE admissions SET intro_text = ? WHERE id = 1', [fullHtml], function(err) {
-  if (err) console.error(err);
-  else console.log('Updated admission ID 1 successfully!');
-});
+query.run('UPDATE admissions SET intro_text = ? WHERE id = 1', [fullHtml])
+  .then(() => console.log('Updated admission ID 1 successfully!'))
+  .catch(console.error);
