@@ -369,7 +369,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                             <p className="text-[10px] font-extrabold uppercase tracking-widest text-white/50">{item.title}</p>
                             <p className="text-xs font-bold text-white mt-0.5">Select a Section</p>
                           </div>
-                          <div className="p-2 space-y-0.5 max-h-[70vh] overflow-y-auto">
+                          <div className="p-2 space-y-0.5 overflow-visible">
                             {children.length === 0 ? (
                               <p className="text-[11px] text-slate-400 italic p-3 text-center">No subpages created.</p>
                             ) : (
@@ -440,7 +440,7 @@ export const Navbar: React.FC<NavbarProps> = ({ currentTab, setCurrentTab, curre
                                                 }}
                                                 className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm transition-all group cursor-pointer ${isSubActive
                                                     ? 'bg-primary text-white font-bold shadow-sm'
-                                                    : 'text-slate-700 dark:text-slate-205 hover:bg-primary/10 hover:text-primary font-semibold'
+                                                    : 'text-slate-700 dark:text-slate-200 hover:bg-primary/10 hover:text-primary font-semibold'
                                                   }`}
                                               >
                                                 <span className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${isSubActive ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-800 group-hover:bg-primary/10'}`}>

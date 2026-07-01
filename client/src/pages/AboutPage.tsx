@@ -2144,7 +2144,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ subpageId, setCurrentTab }
           isSubChild: false
         });
         
-        if (lvl2.menu_type === 'sub-parent') {
+        if (lvl2.menu_type === 'sub-parent' || lvl2.menu_type === 'child') {
           const lvl3Pages = customPages.filter(p => 
             p.is_visible !== 0 && p.menu_type === 'sub-child' && p.parent_menu === lvl2.id
           );
